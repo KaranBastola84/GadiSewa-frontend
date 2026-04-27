@@ -12,7 +12,6 @@ const Register = () => {
     agreeTerms: false
   });
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const validate = () => {
@@ -71,9 +70,6 @@ const Register = () => {
           
           <div className="relative z-10 text-white max-w-[340px]">
             <h3 className="text-4xl font-bold mb-4 leading-tight drop-shadow-lg">Start Your Journey Today.</h3>
-            <p className="text-slate-200 text-[13px] leading-relaxed font-semibold drop-shadow-md">
-              Join the most comprehensive parts management system. Precision tools for precision builders.
-            </p>
           </div>
         </div>
 

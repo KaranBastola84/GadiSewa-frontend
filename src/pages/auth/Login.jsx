@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Input from '../../components/Input';
-import Button from '../../components/Button';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -146,7 +144,7 @@ const Login = () => {
           </form>
 
           <p className="text-[12px] font-medium text-slate-400">
-            Already have an account? <Link to="/register" className="text-slate-900 font-bold underline underline-offset-2">Log In Here</Link>
+            Don't have an account? <Link to="/register" className="text-slate-900 font-bold underline underline-offset-2">Sign Up Here</Link>
           </p>
         </div>
 
@@ -157,13 +155,12 @@ const Login = () => {
             alt="Automotive Culture"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent"></div>
 
-          <div className="relative z-10 text-white max-w-[340px]">
-            <h3 className="text-4xl font-bold mb-4 leading-tight drop-shadow-lg">More Than Wheels. It's Culture.</h3>
-            <p className="text-slate-200 text-[13px] leading-relaxed font-semibold drop-shadow-md">
-              The community for automotive builders. Showcase your work, connect with enthusiasts, discover inspiration, and drive your passion forward together.
-            </p>
+          <div className="relative z-10 text-white max-w-[400px]">
+            <h3 className="text-5xl font-black italic mb-6 leading-[1.1] drop-shadow-2xl uppercase tracking-tighter">
+              More Than Wheels.<br />It's Culture.
+            </h3>
           </div>
         </div>
       </div>
