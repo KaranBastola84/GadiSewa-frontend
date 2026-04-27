@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * Reusable Button Component
- * @param {Object} props - children, onClick, type, variant, isLoading, disabled, fullWidth
+ * Minimalist dark style as per reference
  */
 const Button = ({ 
   children, 
@@ -13,13 +13,12 @@ const Button = ({
   disabled = false,
   fullWidth = true 
 }) => {
-  const baseStyles = "relative flex items-center justify-center px-6 py-3 rounded-lg font-semibold transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group";
+  const baseStyles = "relative flex items-center justify-center px-6 py-3.5 rounded-md font-bold transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-widest";
   
   const variants = {
-    primary: "bg-primary-600 hover:bg-primary-500 text-white shadow-lg shadow-primary-900/20",
-    secondary: "bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700",
-    outline: "bg-transparent border-2 border-primary-600 text-primary-400 hover:bg-primary-600/10",
-    ghost: "bg-transparent hover:bg-slate-800 text-slate-400 hover:text-slate-100"
+    primary: "bg-[#1a1a1a] hover:bg-black text-white shadow-sm",
+    secondary: "bg-white hover:bg-slate-50 text-slate-900 border border-slate-200",
+    outline: "bg-transparent border border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white",
   };
 
   return (
@@ -31,18 +30,15 @@ const Button = ({
     >
       {isLoading ? (
         <div className="flex items-center gap-2">
-          <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <span>Processing...</span>
+          <span>PROCESSING...</span>
         </div>
       ) : (
-        <span className="relative z-10">{children}</span>
+        <span>{children}</span>
       )}
-      
-      {/* Glossy overlay effect on hover */}
-      <div className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
     </button>
   );
 };
