@@ -1,10 +1,15 @@
 import React from 'react'
-import index from './routes/index'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Register from './pages/shared/register'
 
 function App() {
   return (
     <>
-    <index />
+      <Router>
+        <Routes>
+          <Route path="/" element={<Register />} />
+        </Routes>
+      </Router>
     </>
   )
 }
