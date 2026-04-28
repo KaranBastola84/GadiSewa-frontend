@@ -1,17 +1,14 @@
-import axios from 'axios';
+import axios from "axios";
 
 // API configuration
 export const APP_CONFIG = {
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  
-  
+
   // Request headers
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 };
-
-
 
 // Create axios instance with base configuration
 const apiInstance = axios.create({
@@ -23,7 +20,7 @@ const apiInstance = axios.create({
 // Request interceptor to add auth token
 apiInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem("authToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,7 +28,7 @@ apiInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor to handle common errors
@@ -42,13 +39,13 @@ apiInstance.interceptors.response.use(
   (error) => {
     // Handle token expiration
     if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
       // Optionally redirect to home page
-      window.location.href = '/';
+      window.location.href = "/";
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiInstance;
