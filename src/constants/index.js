@@ -1,1 +1,1 @@
-export const AUTH_BG_IMAGE = "public/auth-bg.png";
+export const AUTH_BG_IMAGE = "/auth-bg.png";
