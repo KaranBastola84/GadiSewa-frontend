@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { AUTH_BG_IMAGE } from "../../constants";
 import authService from "../../services/authService";
 
 const Login = () => {
@@ -87,7 +88,7 @@ const Login = () => {
       <div
         className="absolute inset-0 z-0 overflow-hidden"
         style={{
-          backgroundImage: 'url("/assets/images/auth-bg.png")',
+          backgroundImage: `url("${AUTH_BG_IMAGE}")`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           filter: "blur(20px) brightness(0.4)",
@@ -232,7 +233,7 @@ const Login = () => {
         {/* Right Side - Image & Overlay */}
         <div className="flex md:block w-1/2 relative p-12 flex-col justify-end overflow-hidden group">
           <img
-            src="/assets/images/auth-bg.png"
+            src={AUTH_BG_IMAGE}
             alt="Automotive Culture"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
