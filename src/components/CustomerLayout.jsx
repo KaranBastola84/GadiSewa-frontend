@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCustomer } from "../context/CustomerContext";
+import { useAuthContext } from "../context/AuthContext";
 import {
   Home,
   User,
@@ -31,10 +32,10 @@ export default function CustomerLayout({ children, pageTitle }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, unreadCount } = useCustomer();
+  const { logout } = useAuthContext();
 
   function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("isLoggedIn");
+    logout();
     navigate("/login");
   }
 

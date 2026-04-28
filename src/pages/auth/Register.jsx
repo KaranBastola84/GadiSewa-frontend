@@ -1,29 +1,47 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { AUTH_BG_IMAGE } from "../../constants";
 import authService from "../../services/authService";
+import { useAuthContext } from "../../context/AuthContext";
 
 const Register = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthContext();
+
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: "",
-    phone: "",
+    phoneNumber: "",
     password: "",
     confirmPassword: "",
-    role: "Customer",
     agreeTerms: false,
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.fullName.trim()) newErrors.fullName = "Full name required";
+    if (!formData.firstName.trim()) newErrors.firstName = "First name required";
+    if (!formData.lastName.trim()) newErrors.lastName = "Last name required";
     if (!formData.email) newErrors.email = "Email required";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      newErrors.email = "Invalid email";
+    if (!formData.phoneNumber) newErrors.phoneNumber = "Phone number required";
     if (!formData.password) newErrors.password = "Password required";
+    if (formData.password.length < 6)
+      newErrors.password = "Password must be 6+ characters";
     if (formData.password !== formData.confirmPassword)
-      newErrors.confirmPassword = "Mismatch";
-    if (!formData.agreeTerms) newErrors.agreeTerms = "Required";
+      newErrors.confirmPassword = "Passwords don't match";
+    if (!formData.agreeTerms) newErrors.agreeTerms = "You must agree to terms";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -41,51 +59,39 @@ const Register = () => {
     e.preventDefault();
     if (validate()) {
       setIsLoading(true);
-      setErrors({}); // Clear previous errors
+      setErrors({});
+      setSuccessMessage("");
 
       try {
-        // Map phone to phoneNumber to match backend DTO
-        const { fullName, phone } = formData;
-
-        // Split FullName into FirstName and LastName
-        const nameParts = fullName.trim().split(" ");
-        const firstName = nameParts[0] || "";
-        const lastName = nameParts.slice(1).join(" ") || " "; // Default to space if no last name provided
-
-        // Map role to integer if backend expects Enum
-        const roleMapping = {
-          Admin: 0,
-          Customer: 1,
-          Staff: 2,
-        };
-
         const submitData = {
-          FirstName: firstName,
-          LastName: lastName,
-          Email: formData.email,
-          Password: formData.password,
-          PhoneNumber: phone,
-          Role: roleMapping[formData.role] ?? 1, // Default to Customer (1)
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email,
+          password: formData.password,
+          phoneNumber: formData.phoneNumber,
         };
 
-        await authService.registerUser(submitData);
+        const response = await authService.registerUser(submitData);
 
-        // On success: Show success message and redirect
-        alert("Registration successful! Please login.");
-        window.location.href = "/login";
+        if (response?.isSuccess) {
+          setSuccessMessage("Registration successful! Redirecting to login...");
+          setTimeout(() => {
+            navigate("/login");
+          }, 1500);
+        } else {
+          setErrors({
+            general: response?.errorMessage?.[0] || "Registration failed",
+          });
+        }
       } catch (err) {
-        // On error: Show proper error message from backend
         console.error("Registration Error:", err);
-
-        // Handle different error formats
         let errorMsg = "Registration failed. Please try again.";
-        if (err.message) errorMsg = err.message;
-        if (typeof err === "string") errorMsg = err;
-        if (err.errors) errorMsg = Object.values(err.errors).flat().join(", ");
-
-        setErrors({
-          general: errorMsg,
-        });
+        if (err?.errorMessage?.length > 0) {
+          errorMsg = err.errorMessage[0];
+        } else if (err?.message) {
+          errorMsg = err.message;
+        }
+        setErrors({ general: errorMsg });
       } finally {
         setIsLoading(false);
       }
@@ -139,6 +145,12 @@ const Register = () => {
             <p className="text-slate-400 text-sm">Join the elite community</p>
           </div>
 
+          {successMessage && (
+            <div className="w-full max-w-95 p-3 mb-4 bg-green-50 border border-green-100 rounded-lg text-green-600 text-xs text-center">
+              {successMessage}
+            </div>
+          )}
+
           {errors.general && (
             <div className="w-full max-w-95 p-3 mb-4 bg-red-50 border border-red-100 rounded-lg text-red-500 text-xs text-center">
               {errors.general}
@@ -149,59 +161,73 @@ const Register = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                  Full Name
+                  First Name
                 </label>
                 <input
-                  name="fullName"
-                  placeholder="John Doe"
-                  value={formData.fullName}
+                  name="firstName"
+                  placeholder="John"
+                  value={formData.firstName}
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all"
                 />
+                {errors.firstName && (
+                  <p className="text-[9px] text-red-500 ml-1">
+                    {errors.firstName}
+                  </p>
+                )}
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                  Email
+                  Last Name
                 </label>
                 <input
-                  name="email"
-                  type="email"
-                  placeholder="john@doe.com"
-                  value={formData.email}
+                  name="lastName"
+                  placeholder="Doe"
+                  value={formData.lastName}
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all"
                 />
+                {errors.lastName && (
+                  <p className="text-[9px] text-red-500 ml-1">
+                    {errors.lastName}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                  Phone
-                </label>
-                <input
-                  name="phone"
-                  placeholder="9812345678"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                  Role
-                </label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all cursor-pointer"
-                >
-                  <option value="Customer">Customer</option>
-                  <option value="Staff">Staff</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Email
+              </label>
+              <input
+                name="email"
+                type="email"
+                placeholder="john@doe.com"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all"
+              />
+              {errors.email && (
+                <p className="text-[9px] text-red-500 ml-1">{errors.email}</p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Phone Number
+              </label>
+              <input
+                name="phoneNumber"
+                placeholder="9812345678"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all"
+              />
+              {errors.phoneNumber && (
+                <p className="text-[9px] text-red-500 ml-1">
+                  {errors.phoneNumber}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -217,6 +243,11 @@ const Register = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all"
                 />
+                {errors.password && (
+                  <p className="text-[9px] text-red-500 ml-1">
+                    {errors.password}
+                  </p>
+                )}
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
@@ -230,6 +261,11 @@ const Register = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all"
                 />
+                {errors.confirmPassword && (
+                  <p className="text-[9px] text-red-500 ml-1">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -251,20 +287,25 @@ const Register = () => {
                   Terms & Privacy Policy
                 </span>
               </label>
+              {errors.agreeTerms && (
+                <p className="text-[9px] text-red-500 ml-1">
+                  {errors.agreeTerms}
+                </p>
+              )}
             </div>
 
             <div className="pt-3">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#1c1c1c] hover:bg-black text-white py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all active:scale-95"
+                className="w-full bg-[#1c1c1c] hover:bg-black text-white py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
               >
                 {isLoading ? "Processing..." : "Create Account"}
               </button>
             </div>
           </form>
 
-          <p className="text-[11px] font-medium text-slate-400">
+          <p className="text-[11px] font-medium text-slate-400 mt-6">
             Already have an account?{" "}
             <Link
               to="/login"

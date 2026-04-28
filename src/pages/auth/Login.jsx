@@ -1,9 +1,13 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { AUTH_BG_IMAGE } from "../../constants";
 import authService from "../../services/authService";
+import { useAuthContext, USER_ROLES } from "../../context/AuthContext";
 
 const Login = () => {
+  const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuthContext();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -12,6 +16,13 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   const validate = () => {
     const newErrors = {};
@@ -45,7 +56,7 @@ const Login = () => {
     e.preventDefault();
     if (validate()) {
       setIsLoading(true);
-      setErrors({}); // Clear previous errors
+      setErrors({});
 
       try {
         const credentials = {
@@ -55,26 +66,32 @@ const Login = () => {
 
         const response = await authService.loginUser(credentials);
 
-        // On success: Store user data in localStorage
-        // Assuming response structure contains token and user info
-        if (response.token) {
-          localStorage.setItem("token", response.token);
+        if (response?.isSuccess && response?.result) {
+          const authData = response.result;
+          login(authData);
+
+          // Redirect based on role
+          if (authData.role === USER_ROLES.ADMIN) {
+            navigate("/admin-dashboard");
+          } else if (authData.role === USER_ROLES.STAFF) {
+            navigate("/staff-dashboard");
+          } else if (authData.role === USER_ROLES.CUSTOMER) {
+            navigate("/customer/dashboard");
+          } else {
+            navigate("/dashboard");
+          }
+        } else {
+          setErrors({
+            general: response?.errorMessage?.[0] || "Login failed",
+          });
         }
-
-        // Storing name and role as requested
-        localStorage.setItem(
-          "userName",
-          response.fullName || response.userName || "User",
-        );
-        localStorage.setItem("userRole", response.role || "User");
-
-        // Redirect to Dashboard page
-        window.location.href = "/dashboard";
       } catch (err) {
-        // On failure: Show error message
         console.error("Login Error:", err);
         setErrors({
-          general: err.message || "Invalid email or password",
+          general:
+            err?.errorMessage?.[0] ||
+            err?.message ||
+            "Invalid email or password",
         });
       } finally {
         setIsLoading(false);
