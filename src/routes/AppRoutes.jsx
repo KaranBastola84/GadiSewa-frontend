@@ -3,6 +3,10 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import Dashboard from "../pages/Dashboard";
+import AdminDashboard from "../pages/admin/Dashboard";
+import PartsPage from "../pages/admin/PartsPage";
+import VendorsPage from "../pages/admin/VendorsPage";
+import UsersPage from "../pages/admin/UsersPage";
 import CustomerDashboard from "../pages/customer/Dashboard";
 import ProfilePage from "../pages/customer/ProfilePage";
 import VehiclesPage from "../pages/customer/VehiclesPage";
@@ -27,6 +31,40 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin Routes - Protected */}
+      <Route
+        path="/admin-dashboard"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/parts"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
+            <PartsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/vendors"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
+            <VendorsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
+            <UsersPage />
           </ProtectedRoute>
         }
       />
