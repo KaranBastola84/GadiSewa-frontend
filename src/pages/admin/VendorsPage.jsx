@@ -17,6 +17,9 @@ export default function VendorsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const loadVendors = async () => {
     setLoading(true);
@@ -82,6 +85,23 @@ export default function VendorsPage() {
       phoneNumber: vendor.phoneNumber || "",
       address: vendor.address || "",
     });
+  };
+
+  const openVendorDetails = async (vendorId) => {
+    setDetailLoading(true);
+    setSelectedVendor(null);
+    setShowDetailModal(true);
+    setError("");
+
+    try {
+      const response = await adminVendorsService.getVendorById(vendorId);
+      setSelectedVendor(response?.result || null);
+    } catch (detailError) {
+      setError(detailError.message || "Failed to load vendor details.");
+      setShowDetailModal(false);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handleDelete = async (vendorId) => {
@@ -232,6 +252,13 @@ export default function VendorsPage() {
                     <div className="mt-4 flex gap-2">
                       <button
                         type="button"
+                        onClick={() => openVendorDetails(id)}
+                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        View
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleEdit(vendor)}
                         className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                       >
@@ -257,6 +284,35 @@ export default function VendorsPage() {
           )}
         </section>
       </div>
+
+      {showDetailModal && (
+        <Modal title="Vendor details" onClose={() => setShowDetailModal(false)}>
+          {detailLoading ? (
+            <div className="py-10 text-center text-sm text-slate-500">
+              Loading vendor details...
+            </div>
+          ) : selectedVendor ? (
+            <div className="space-y-3 text-sm text-slate-700">
+              <DetailRow label="Name" value={selectedVendor.name} />
+              <DetailRow
+                label="Contact person"
+                value={selectedVendor.contactPerson}
+              />
+              <DetailRow label="Email" value={selectedVendor.email} />
+              <DetailRow label="Phone" value={selectedVendor.phoneNumber} />
+              <DetailRow label="Address" value={selectedVendor.address} />
+              <DetailRow
+                label="Vendor ID"
+                value={selectedVendor.id || selectedVendor.vendorId}
+              />
+            </div>
+          ) : (
+            <p className="py-6 text-sm text-slate-500">
+              No vendor details available.
+            </p>
+          )}
+        </Modal>
+      )}
     </AdminLayout>
   );
 }
@@ -278,5 +334,36 @@ function Field({ label, textarea = false, className = "", ...props }) {
         />
       )}
     </label>
+  );
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-2 last:border-0">
+      <span className="text-slate-500">{label}</span>
+      <span className="text-right font-medium text-slate-950">
+        {value || "-"}
+      </span>
+    </div>
+  );
+}
+
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4">
+      <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="text-lg font-bold text-slate-950">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Close
+          </button>
+        </div>
+        <div className="mt-5">{children}</div>
+      </div>
+    </div>
   );
 }

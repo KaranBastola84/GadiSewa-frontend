@@ -18,6 +18,9 @@ export default function PartsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedPart, setSelectedPart] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const loadParts = async () => {
     setLoading(true);
@@ -91,6 +94,23 @@ export default function PartsPage() {
       stockQuantity: part.stockQuantity ?? "",
       reorderLevel: part.reorderLevel ?? "",
     });
+  };
+
+  const openPartDetails = async (partId) => {
+    setDetailLoading(true);
+    setSelectedPart(null);
+    setShowDetailModal(true);
+    setError("");
+
+    try {
+      const response = await adminPartsService.getPartById(partId);
+      setSelectedPart(response?.result || null);
+    } catch (detailError) {
+      setError(detailError.message || "Failed to load part details.");
+      setShowDetailModal(false);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handleDelete = async (partId) => {
@@ -267,17 +287,20 @@ export default function PartsPage() {
                         <Td className="text-right">{part.stockQuantity}</Td>
                         <Td>
                           <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                              part.isLowStock
-                                ? "bg-red-50 text-red-700"
-                                : "bg-emerald-50 text-emerald-700"
-                            }`}
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${part.isLowStock ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}
                           >
                             {part.isLowStock ? "Low stock" : "Healthy"}
                           </span>
                         </Td>
                         <Td className="text-right">
                           <div className="inline-flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openPartDetails(part.partId)}
+                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                              View
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleEdit(part)}
@@ -313,6 +336,43 @@ export default function PartsPage() {
           )}
         </section>
       </div>
+
+      {showDetailModal && (
+        <Modal title="Part details" onClose={() => setShowDetailModal(false)}>
+          {detailLoading ? (
+            <div className="py-10 text-center text-sm text-slate-500">
+              Loading part details...
+            </div>
+          ) : selectedPart ? (
+            <div className="space-y-3 text-sm text-slate-700">
+              <DetailRow label="Name" value={selectedPart.name} />
+              <DetailRow label="Part number" value={selectedPart.partNumber} />
+              <DetailRow label="Description" value={selectedPart.description} />
+              <DetailRow
+                label="Unit price"
+                value={`Rs. ${Number(selectedPart.unitPrice || 0).toLocaleString()}`}
+              />
+              <DetailRow
+                label="Stock quantity"
+                value={selectedPart.stockQuantity}
+              />
+              <DetailRow
+                label="Reorder level"
+                value={selectedPart.reorderLevel}
+              />
+              <DetailRow
+                label="Low stock"
+                value={selectedPart.isLowStock ? "Yes" : "No"}
+              />
+              <DetailRow label="Part ID" value={selectedPart.partId} />
+            </div>
+          ) : (
+            <p className="py-6 text-sm text-slate-500">
+              No part details available.
+            </p>
+          )}
+        </Modal>
+      )}
     </AdminLayout>
   );
 }
@@ -355,5 +415,36 @@ function Td({ children, className = "", colSpan }) {
     >
       {children}
     </td>
+  );
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-2 last:border-0">
+      <span className="text-slate-500">{label}</span>
+      <span className="text-right font-medium text-slate-950">
+        {value || "-"}
+      </span>
+    </div>
+  );
+}
+
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4">
+      <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="text-lg font-bold text-slate-950">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Close
+          </button>
+        </div>
+        <div className="mt-5">{children}</div>
+      </div>
+    </div>
   );
 }
