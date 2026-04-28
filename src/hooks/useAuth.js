@@ -1,4 +1,4 @@
-import { useAuthContext } from '../context/AuthContext';
+import { useAuthContext } from "../context/AuthContext";
 
 /**
  * Custom hook for authentication logic
@@ -14,8 +14,8 @@ export const useAuth = () => {
     isAuthenticated,
     loading,
     // Add additional helper methods here (e.g., check permissions)
-    isAdmin: user?.role === 'Admin',
-    isStaff: user?.role === 'Staff',
+    isAdmin: user?.role === "Admin",
+    isStaff: user?.role === "Staff",
   };
 };
 

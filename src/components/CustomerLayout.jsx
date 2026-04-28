@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCustomer } from "../context/CustomerContext";
+import { useAuthContext } from "../context/AuthContext";
 import {
   Home,
   User,
@@ -31,10 +32,10 @@ export default function CustomerLayout({ children, pageTitle }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, unreadCount } = useCustomer();
+  const { logout } = useAuthContext();
 
   function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("isLoggedIn");
+    logout();
     navigate("/login");
   }
 
@@ -44,10 +45,10 @@ export default function CustomerLayout({ children, pageTitle }) {
 
   const sidebarBody = (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-5 border-b border-slate-700/50">
+      <div className="px-6 py-5 border-b border-white/10 bg-white/3 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-sky-600 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">G</span>
+          <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/25">
+            <span className="text-white font-black text-lg">G</span>
           </div>
           <div>
             <h1 className="text-white font-bold text-lg">GadiSewa</h1>
@@ -64,10 +65,10 @@ export default function CustomerLayout({ children, pageTitle }) {
               key={item.path}
               to={item.path}
               onClick={() => setMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive(item.path)
-                  ? "bg-sky-600/20 text-sky-400"
-                  : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                  ? "bg-linear-to-r from-sky-500/20 to-indigo-500/20 text-white ring-1 ring-white/10"
+                  : "text-slate-300 hover:bg-white/5 hover:text-white"
               }`}
             >
               <Icon size={18} />
@@ -82,9 +83,9 @@ export default function CustomerLayout({ children, pageTitle }) {
         })}
       </nav>
 
-      <div className="px-3 py-4 border-t border-slate-700/50">
+      <div className="px-3 py-4 border-t border-white/10 bg-white/2">
         <div className="flex items-center gap-3 px-4 py-2 mb-2">
-          <div className="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white font-semibold text-sm">
+          <div className="w-9 h-9 rounded-full bg-linear-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-sky-500/20">
             {profile?.fullName?.charAt(0)?.toUpperCase() || "U"}
           </div>
           <div className="flex-1 min-w-0">
@@ -98,7 +99,7 @@ export default function CustomerLayout({ children, pageTitle }) {
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition w-full"
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-slate-300 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200 w-full"
         >
           <LogOut size={18} />
           Sign Out
@@ -108,18 +109,18 @@ export default function CustomerLayout({ children, pageTitle }) {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-slate-900 z-30">
+    <div className="min-h-screen flex bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_100%)]">
+      <aside className="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 bg-slate-950/95 backdrop-blur-xl border-r border-white/10 z-30 shadow-2xl shadow-slate-900/20">
         {sidebarBody}
       </aside>
 
       {menuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="fixed inset-0 bg-black/50"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
             onClick={() => setMenuOpen(false)}
           />
-          <aside className="fixed inset-y-0 left-0 w-64 bg-slate-900 z-50">
+          <aside className="fixed inset-y-0 left-0 w-72 bg-slate-950/98 backdrop-blur-xl border-r border-white/10 z-50 shadow-2xl shadow-slate-900/40">
             <button
               onClick={() => setMenuOpen(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white"
@@ -131,22 +132,29 @@ export default function CustomerLayout({ children, pageTitle }) {
         </div>
       )}
 
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4">
+      <div className="flex-1 lg:ml-72 flex flex-col min-h-screen">
+        <header className="sticky top-0 z-20 bg-white/75 backdrop-blur-xl border-b border-white/60 px-4 sm:px-6 lg:px-8 py-4 shadow-sm shadow-slate-900/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setMenuOpen(true)}
-                className="lg:hidden text-slate-600 hover:text-slate-900"
+                className="lg:hidden text-slate-600 hover:text-slate-900 rounded-lg p-2 hover:bg-slate-100"
               >
                 <Menu size={24} />
               </button>
-              <h2 className="text-xl font-bold text-slate-900">{pageTitle}</h2>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400 font-semibold">
+                  GadiSewa Console
+                </p>
+                <h2 className="text-xl font-bold text-slate-900">
+                  {pageTitle}
+                </h2>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <Link
                 to="/customer/notifications"
-                className="relative p-2 text-slate-500 hover:text-slate-700 rounded-lg transition"
+                className="relative p-2 text-slate-500 hover:text-slate-700 rounded-xl transition hover:bg-slate-100"
               >
                 <Bell size={20} />
                 {unreadCount > 0 && (
@@ -157,7 +165,7 @@ export default function CustomerLayout({ children, pageTitle }) {
               </Link>
               <Link
                 to="/customer/profile"
-                className="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white font-semibold text-sm"
+                className="w-9 h-9 rounded-full bg-linear-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-sky-500/20"
               >
                 {profile?.fullName?.charAt(0)?.toUpperCase() || "U"}
               </Link>
@@ -167,7 +175,7 @@ export default function CustomerLayout({ children, pageTitle }) {
 
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">{children}</main>
 
-        <footer className="px-4 py-3 border-t border-slate-200 bg-white">
+        <footer className="px-4 py-3 border-t border-slate-200/80 bg-white/70 backdrop-blur-xl">
           <p className="text-center text-xs text-slate-400">
             &copy; 2026 GadiSewa Vehicle Service Center
           </p>

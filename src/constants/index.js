@@ -1,0 +1,1 @@
+export const AUTH_BG_IMAGE = "/auth-bg.png";

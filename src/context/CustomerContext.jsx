@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
 
 const CustomerContext = createContext(null);
@@ -18,19 +19,34 @@ function saveData(key, data) {
 export function CustomerProvider({ children }) {
   const [profile, setProfile] = useState(() => loadData("gs_profile", null));
   const [vehicles, setVehicles] = useState(() => loadData("gs_vehicles"));
-  const [appointments, setAppointments] = useState(() => loadData("gs_appointments"));
+  const [appointments, setAppointments] = useState(() =>
+    loadData("gs_appointments"),
+  );
   const [history] = useState(() => loadData("gs_history"));
   const [requests, setRequests] = useState(() => loadData("gs_requests"));
   const [reviews, setReviews] = useState(() => loadData("gs_reviews"));
-  const [notifications, setNotifications] = useState(() => loadData("gs_notifications"));
-  const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState(() =>
+    loadData("gs_notifications"),
+  );
 
-  useEffect(() => { if (profile) saveData("gs_profile", profile); }, [profile]);
-  useEffect(() => { saveData("gs_vehicles", vehicles); }, [vehicles]);
-  useEffect(() => { saveData("gs_appointments", appointments); }, [appointments]);
-  useEffect(() => { saveData("gs_requests", requests); }, [requests]);
-  useEffect(() => { saveData("gs_reviews", reviews); }, [reviews]);
-  useEffect(() => { saveData("gs_notifications", notifications); }, [notifications]);
+  useEffect(() => {
+    if (profile) saveData("gs_profile", profile);
+  }, [profile]);
+  useEffect(() => {
+    saveData("gs_vehicles", vehicles);
+  }, [vehicles]);
+  useEffect(() => {
+    saveData("gs_appointments", appointments);
+  }, [appointments]);
+  useEffect(() => {
+    saveData("gs_requests", requests);
+  }, [requests]);
+  useEffect(() => {
+    saveData("gs_reviews", reviews);
+  }, [reviews]);
+  useEffect(() => {
+    saveData("gs_notifications", notifications);
+  }, [notifications]);
 
   function updateProfile(data) {
     setProfile(data);
@@ -42,7 +58,9 @@ export function CustomerProvider({ children }) {
   }
 
   function updateVehicle(id, data) {
-    setVehicles((prev) => prev.map((v) => (v.id === id ? { ...v, ...data } : v)));
+    setVehicles((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, ...data } : v)),
+    );
   }
 
   function deleteVehicle(id) {
@@ -56,13 +74,15 @@ export function CustomerProvider({ children }) {
 
   function cancelAppointment(id) {
     setAppointments((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "Cancelled" } : a))
+      prev.map((a) => (a.id === id ? { ...a, status: "Cancelled" } : a)),
     );
   }
 
   function submitRequest(data) {
     const newReq = {
-      ...data, id: Date.now(), status: "Pending",
+      ...data,
+      id: Date.now(),
+      status: "Pending",
       requestedDate: new Date().toISOString().split("T")[0],
     };
     setRequests((prev) => [...prev, newReq]);
@@ -70,15 +90,17 @@ export function CustomerProvider({ children }) {
 
   function submitReview(data) {
     const newReview = {
-      ...data, id: Date.now(),
-      date: new Date().toISOString().split("T")[0], response: "",
+      ...data,
+      id: Date.now(),
+      date: new Date().toISOString().split("T")[0],
+      response: "",
     };
     setReviews((prev) => [...prev, newReview]);
   }
 
   function markRead(id) {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
   }
 
@@ -90,14 +112,26 @@ export function CustomerProvider({ children }) {
   const totalSpent = history.reduce((sum, h) => sum + (h.amount || 0), 0);
 
   const value = {
-    profile, updateProfile,
-    vehicles, addVehicle, updateVehicle, deleteVehicle,
-    appointments, bookAppointment, cancelAppointment,
+    profile,
+    updateProfile,
+    vehicles,
+    addVehicle,
+    updateVehicle,
+    deleteVehicle,
+    appointments,
+    bookAppointment,
+    cancelAppointment,
     history,
-    requests, submitRequest,
-    reviews, submitReview,
-    notifications, markRead, markAllRead, unreadCount,
-    totalSpent, loading,
+    requests,
+    submitRequest,
+    reviews,
+    submitReview,
+    notifications,
+    markRead,
+    markAllRead,
+    unreadCount,
+    totalSpent,
+    loading: false,
   };
 
   return (
