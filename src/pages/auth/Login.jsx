@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import authService from '../../services/authService';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import authService from "../../services/authService";
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    agreeTerms: false
+    email: "",
+    password: "",
+    agreeTerms: false,
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -15,15 +15,15 @@ const Login = () => {
   const validate = () => {
     const newErrors = {};
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email address is invalid';
+      newErrors.email = "Email address is invalid";
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
     if (!formData.agreeTerms) {
-      newErrors.agreeTerms = 'You must agree to the terms';
+      newErrors.agreeTerms = "You must agree to the terms";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -33,10 +33,10 @@ const Login = () => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -49,7 +49,7 @@ const Login = () => {
       try {
         const credentials = {
           email: formData.email,
-          password: formData.password
+          password: formData.password,
         };
 
         const response = await authService.loginUser(credentials);
@@ -57,20 +57,23 @@ const Login = () => {
         // On success: Store user data in localStorage
         // Assuming response structure contains token and user info
         if (response.token) {
-          localStorage.setItem('token', response.token);
+          localStorage.setItem("token", response.token);
         }
 
         // Storing name and role as requested
-        localStorage.setItem('userName', response.fullName || response.userName || 'User');
-        localStorage.setItem('userRole', response.role || 'User');
+        localStorage.setItem(
+          "userName",
+          response.fullName || response.userName || "User",
+        );
+        localStorage.setItem("userRole", response.role || "User");
 
         // Redirect to Dashboard page
-        window.location.href = '/dashboard';
+        window.location.href = "/dashboard";
       } catch (err) {
         // On failure: Show error message
-        console.error('Login Error:', err);
+        console.error("Login Error:", err);
         setErrors({
-          general: err.message || 'Invalid email or password'
+          general: err.message || "Invalid email or password",
         });
       } finally {
         setIsLoading(false);
@@ -85,16 +88,15 @@ const Login = () => {
         className="absolute inset-0 z-0 overflow-hidden"
         style={{
           backgroundImage: 'url("/assets/images/auth-bg.png")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'blur(20px) brightness(0.4)',
-          transform: 'scale(1.1)'
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "blur(20px) brightness(0.4)",
+          transform: "scale(1.1)",
         }}
       ></div>
 
       {/* Main Login Card */}
       <div className="relative z-10 w-full max-w-250 flex flex-col md:flex-row bg-white rounded-4xl overflow-hidden shadow-2xl">
-
         {/* Left Side - Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col items-center">
           {/* Logo */}
@@ -105,7 +107,9 @@ const Login = () => {
           </div>
 
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-slate-900 mb-1">Build Together</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-1">
+              Build Together
+            </h2>
             <p className="text-slate-400 text-sm">Please enter your details</p>
           </div>
 
@@ -117,7 +121,9 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="w-full max-w-85 space-y-4">
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email address</label>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Email address
+              </label>
               <input
                 name="email"
                 type="email"
@@ -127,18 +133,27 @@ const Login = () => {
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-slate-300 transition-all placeholder:text-slate-300"
               />
-              {errors.email && <p className="text-[10px] text-red-500 ml-1">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-[10px] text-red-500 ml-1">{errors.email}</p>
+              )}
             </div>
 
             <div className="space-y-1">
               <div className="flex justify-between items-center px-1">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Password</label>
-                <button type="button" className="text-[10px] font-bold text-slate-400 hover:text-slate-900 transition-colors uppercase">Forgot password?</button>
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  className="text-[10px] font-bold text-slate-400 hover:text-slate-900 transition-colors uppercase"
+                >
+                  Forgot password?
+                </button>
               </div>
               <div className="relative">
                 <input
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   placeholder="Enter your password"
                   value={formData.password}
@@ -150,10 +165,26 @@ const Login = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </button>
               </div>
-              {errors.password && <p className="text-[10px] text-red-500 ml-1">{errors.password}</p>}
+              {errors.password && (
+                <p className="text-[10px] text-red-500 ml-1">
+                  {errors.password}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-2 pt-2">
@@ -165,8 +196,14 @@ const Login = () => {
                 onChange={handleChange}
                 className="w-4 h-4 rounded border-slate-200 text-slate-900 focus:ring-0 cursor-pointer"
               />
-              <label htmlFor="agreeTerms" className="text-[11px] text-slate-400 font-medium cursor-pointer">
-                I Agree To The <span className="font-bold underline">Terms & Privacy Policy</span>
+              <label
+                htmlFor="agreeTerms"
+                className="text-[11px] text-slate-400 font-medium cursor-pointer"
+              >
+                I Agree To The{" "}
+                <span className="font-bold underline">
+                  Terms & Privacy Policy
+                </span>
               </label>
             </div>
 
@@ -176,13 +213,19 @@ const Login = () => {
                 disabled={isLoading}
                 className="w-full bg-[#1c1c1c] hover:bg-black text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95"
               >
-                {isLoading ? 'Processing...' : 'Join the Ride'}
+                {isLoading ? "Processing..." : "Join the Ride"}
               </button>
             </div>
           </form>
 
           <p className="text-[12px] font-medium text-slate-400">
-            Don't have an account? <Link to="/register" className="text-slate-900 font-bold underline underline-offset-2">Sign Up Here</Link>
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-slate-900 font-bold underline underline-offset-2"
+            >
+              Sign Up Here
+            </Link>
           </p>
         </div>
 
@@ -197,7 +240,9 @@ const Login = () => {
 
           <div className="relative z-10 text-white max-w-100">
             <h3 className="text-5xl font-black italic mb-6 leading-[1.1] drop-shadow-2xl uppercase tracking-tighter">
-              More Than Wheels.<br />It's Culture.
+              More Than Wheels.
+              <br />
+              It's Culture.
             </h3>
           </div>
         </div>
