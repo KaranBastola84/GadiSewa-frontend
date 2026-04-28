@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
 import { useCustomer } from "../../context/CustomerContext";
@@ -152,12 +153,12 @@ export default function AppointmentsPage() {
           {vehicles.length === 0 ? (
             <p className="text-sm text-slate-500 py-4">
               Please{" "}
-              <a
-                href="/customer/vehicles"
+              <Link
+                to="/customer/vehicles"
                 className="text-sky-600 font-semibold"
               >
                 add a vehicle
-              </a>{" "}
+              </Link>{" "}
               first.
             </p>
           ) : (
@@ -306,7 +307,7 @@ export default function AppointmentsPage() {
               key={apt.id}
               className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3"
             >
-              <div className="text-center w-14 flex-shrink-0">
+              <div className="text-center w-14 shrink-0">
                 <p className="text-xs text-sky-600 font-semibold">
                   {new Date(apt.date).toLocaleDateString("en", {
                     month: "short",

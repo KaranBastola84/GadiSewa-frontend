@@ -6,8 +6,8 @@ import {
   Navigate,
 } from "react-router-dom";
 import { CustomerProvider } from "./context/CustomerContext";
-import Register from "./pages/shared/register";
-import Login from "./pages/shared/login";
+import Register from "./pages/auth/Register";
+import Login from "./pages/auth/Login";
 import CustomerDashboard from "./pages/customer/Dashboard";
 import ProfilePage from "./pages/customer/ProfilePage";
 import VehiclesPage from "./pages/customer/VehiclesPage";

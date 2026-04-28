@@ -44,8 +44,7 @@ const Register = () => {
 
       try {
         // Map phone to phoneNumber to match backend DTO
-        const { fullName, phone, confirmPassword, agreeTerms, ...rest } =
-          formData;
+        const { fullName, phone } = formData;
 
         // Split FullName into FirstName and LastName
         const nameParts = fullName.trim().split(" ");
@@ -62,13 +61,13 @@ const Register = () => {
         const submitData = {
           FirstName: firstName,
           LastName: lastName,
-          Email: rest.email,
-          Password: rest.password,
+          Email: formData.email,
+          Password: formData.password,
           PhoneNumber: phone,
           Role: roleMapping[formData.role] ?? 1, // Default to Customer (1)
         };
 
-        const response = await authService.registerUser(submitData);
+        await authService.registerUser(submitData);
 
         // On success: Show success message and redirect
         alert("Registration successful! Please login.");

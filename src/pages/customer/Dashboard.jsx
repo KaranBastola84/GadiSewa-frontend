@@ -8,7 +8,6 @@ export default function Dashboard() {
     vehicles,
     appointments,
     history,
-    notifications,
     unreadCount,
     totalSpent,
     loading,
@@ -38,18 +37,26 @@ export default function Dashboard() {
 
   return (
     <CustomerLayout pageTitle="Dashboard">
-      <div className="bg-linear-to-r from-sky-600 to-indigo-700 rounded-2xl p-6 sm:p-8 mb-6 text-white">
-        <h1 className="text-2xl font-bold">
-          Welcome, {profile?.fullName || "Customer"}!
-        </h1>
-        <p className="mt-2 text-sky-100">
-          Manage your vehicles, book appointments, and track purchases.
-        </p>
-        {hasLoyalty && (
-          <div className="mt-3 inline-flex items-center gap-2 bg-white/15 rounded-full px-4 py-1.5 text-sm">
-            ⭐ Loyalty Member — 10% off on purchases over Rs. 5,000
+      <div className="relative overflow-hidden rounded-[28px] p-6 sm:p-8 mb-6 text-white shadow-2xl shadow-sky-500/20 bg-linear-to-br from-sky-600 via-sky-700 to-indigo-800 border border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.22),transparent_28%)]" />
+        <div className="relative">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold tracking-wide uppercase text-sky-50">
+            Customer overview
           </div>
-        )}
+          <h1 className="mt-4 text-2xl sm:text-3xl font-bold">
+            Welcome, {profile?.fullName || "Customer"}!
+          </h1>
+          <p className="mt-2 max-w-2xl text-sky-100">
+            Manage your vehicles, book appointments, and track purchases from a
+            single polished workspace.
+          </p>
+          {hasLoyalty && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm backdrop-blur-sm">
+              <span>⭐</span> Loyalty Member - 10% off on purchases over Rs.
+              5,000
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -129,7 +136,7 @@ export default function Dashboard() {
                     key={apt.id}
                     className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
                   >
-                    <div className="text-center flex-shrink-0">
+                    <div className="text-center shrink-0">
                       <p className="text-xs text-sky-600 font-semibold">
                         {new Date(apt.date).toLocaleDateString("en", {
                           month: "short",
@@ -245,10 +252,13 @@ function StatCard({ label, value, link }) {
   return (
     <Link
       to={link}
-      className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow transition"
+      className="group rounded-2xl p-4 border border-slate-200/80 bg-white/85 backdrop-blur-xl shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
     >
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-xl font-bold text-slate-800 mt-1">{value}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+        {label}
+      </p>
+      <p className="text-xl font-bold text-slate-900 mt-2">{value}</p>
+      <div className="mt-3 h-0.5 w-10 rounded-full bg-sky-500/0 group-hover:bg-sky-500 transition-all" />
     </Link>
   );
 }
@@ -258,13 +268,15 @@ function ActionLink({ to, label, desc }) {
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-sky-200 transition"
+      className="flex items-center gap-3 p-4 rounded-2xl border border-slate-200/70 bg-slate-50/80 hover:bg-white hover:border-sky-200 hover:shadow-md transition-all duration-200"
     >
       <div className="flex-1">
-        <p className="text-sm font-semibold text-slate-800">{label}</p>
-        <p className="text-xs text-slate-400">{desc}</p>
+        <p className="text-sm font-semibold text-slate-900">{label}</p>
+        <p className="text-xs text-slate-500">{desc}</p>
       </div>
-      <span className="text-slate-300">→</span>
+      <span className="text-slate-300 group-hover:text-sky-500 transition">
+        →
+      </span>
     </Link>
   );
 }

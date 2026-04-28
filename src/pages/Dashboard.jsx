@@ -1,24 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
 
 const Dashboard = () => {
-  const [userName, setUserName] = useState('');
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Get username from localStorage
-    const storedName = localStorage.getItem('userName');
-    if (storedName) {
-      setUserName(storedName);
-    } else {
-      // If no name found, might not be logged in
-      // navigate('/login');
-    }
-  }, [navigate]);
+  const [userName] = useState(() => localStorage.getItem("userName") || "");
 
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = '/login';
+    window.location.href = "/login";
   };
 
   return (
@@ -27,10 +14,12 @@ const Dashboard = () => {
         <h1 className="text-4xl font-black italic tracking-tighter mb-4 uppercase">
           GADISEWA<span className="text-primary-600">®</span>
         </h1>
-        
+
         <div className="py-8">
           <h2 className="text-2xl font-bold text-slate-100 mb-2">
-            Welcome to <span className="text-blue-400">{userName || 'User'}</span> Dashboard
+            Welcome to{" "}
+            <span className="text-blue-400">{userName || "User"}</span>{" "}
+            Dashboard
           </h2>
           <p className="text-slate-400 text-sm">
             You are successfully logged in to the GadiSewa platform.

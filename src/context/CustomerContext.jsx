@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
 
 const CustomerContext = createContext(null);
@@ -27,7 +28,6 @@ export function CustomerProvider({ children }) {
   const [notifications, setNotifications] = useState(() =>
     loadData("gs_notifications"),
   );
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (profile) saveData("gs_profile", profile);
@@ -131,7 +131,7 @@ export function CustomerProvider({ children }) {
     markAllRead,
     unreadCount,
     totalSpent,
-    loading,
+    loading: false,
   };
 
   return (
