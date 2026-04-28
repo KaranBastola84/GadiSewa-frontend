@@ -2,7 +2,17 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCustomer } from "../context/CustomerContext";
 import {
-  Home, User, Truck, CalendarDays, Clock, Package, Star, Bell, LogOut, Menu, X
+  Home,
+  User,
+  Truck,
+  CalendarDays,
+  Clock,
+  Package,
+  Star,
+  Bell,
+  LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 
 const navLinks = [
@@ -50,9 +60,16 @@ export default function CustomerLayout({ children, pageTitle }) {
         {navLinks.map((item) => {
           const Icon = item.icon;
           return (
-            <Link key={item.path} to={item.path} onClick={() => setMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${isActive(item.path) ? "bg-sky-600/20 text-sky-400" : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                }`}>
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setMenuOpen(false)}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                isActive(item.path)
+                  ? "bg-sky-600/20 text-sky-400"
+                  : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+              }`}
+            >
               <Icon size={18} />
               {item.label}
               {item.icon === Bell && unreadCount > 0 && (
@@ -71,12 +88,18 @@ export default function CustomerLayout({ children, pageTitle }) {
             {profile?.fullName?.charAt(0)?.toUpperCase() || "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{profile?.fullName || "Customer"}</p>
-            <p className="text-xs text-slate-400 truncate">{profile?.email || ""}</p>
+            <p className="text-sm font-medium text-white truncate">
+              {profile?.fullName || "Customer"}
+            </p>
+            <p className="text-xs text-slate-400 truncate">
+              {profile?.email || ""}
+            </p>
           </div>
         </div>
-        <button onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition w-full">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition w-full"
+        >
           <LogOut size={18} />
           Sign Out
         </button>
@@ -92,9 +115,15 @@ export default function CustomerLayout({ children, pageTitle }) {
 
       {menuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setMenuOpen(false)}
+          />
           <aside className="fixed inset-y-0 left-0 w-64 bg-slate-900 z-50">
-            <button onClick={() => setMenuOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+            <button
+              onClick={() => setMenuOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
               <X size={24} />
             </button>
             {sidebarBody}
@@ -106,13 +135,19 @@ export default function CustomerLayout({ children, pageTitle }) {
         <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button onClick={() => setMenuOpen(true)} className="lg:hidden text-slate-600 hover:text-slate-900">
+              <button
+                onClick={() => setMenuOpen(true)}
+                className="lg:hidden text-slate-600 hover:text-slate-900"
+              >
                 <Menu size={24} />
               </button>
               <h2 className="text-xl font-bold text-slate-900">{pageTitle}</h2>
             </div>
             <div className="flex items-center gap-3">
-              <Link to="/customer/notifications" className="relative p-2 text-slate-500 hover:text-slate-700 rounded-lg transition">
+              <Link
+                to="/customer/notifications"
+                className="relative p-2 text-slate-500 hover:text-slate-700 rounded-lg transition"
+              >
                 <Bell size={20} />
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
@@ -120,7 +155,10 @@ export default function CustomerLayout({ children, pageTitle }) {
                   </span>
                 )}
               </Link>
-              <Link to="/customer/profile" className="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white font-semibold text-sm">
+              <Link
+                to="/customer/profile"
+                className="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white font-semibold text-sm"
+              >
                 {profile?.fullName?.charAt(0)?.toUpperCase() || "U"}
               </Link>
             </div>
@@ -130,7 +168,9 @@ export default function CustomerLayout({ children, pageTitle }) {
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">{children}</main>
 
         <footer className="px-4 py-3 border-t border-slate-200 bg-white">
-          <p className="text-center text-xs text-slate-400">&copy; 2026 GadiSewa Vehicle Service Center</p>
+          <p className="text-center text-xs text-slate-400">
+            &copy; 2026 GadiSewa Vehicle Service Center
+          </p>
         </footer>
       </div>
     </div>

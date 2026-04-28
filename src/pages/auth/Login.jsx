@@ -93,7 +93,7 @@ const Login = () => {
       ></div>
 
       {/* Main Login Card */}
-      <div className="relative z-10 w-full max-w-[1000px] flex flex-col md:flex-row bg-white rounded-[32px] overflow-hidden shadow-2xl">
+      <div className="relative z-10 w-full max-w-250 flex flex-col md:flex-row bg-white rounded-4xl overflow-hidden shadow-2xl">
 
         {/* Left Side - Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col items-center">
@@ -110,12 +110,12 @@ const Login = () => {
           </div>
 
           {errors.general && (
-            <div className="w-full max-w-[340px] p-3 mb-4 bg-red-50 border border-red-100 rounded-lg text-red-500 text-xs text-center">
+            <div className="w-full max-w-85 p-3 mb-4 bg-red-50 border border-red-100 rounded-lg text-red-500 text-xs text-center">
               {errors.general}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="w-full max-w-[340px] space-y-4">
+          <form onSubmit={handleSubmit} className="w-full max-w-85 space-y-4">
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email address</label>
               <input
@@ -187,15 +187,15 @@ const Login = () => {
         </div>
 
         {/* Right Side - Image & Overlay */}
-        <div className="hidden md:block w-1/2 relative p-12 flex flex-col justify-end overflow-hidden group">
+        <div className="flex md:block w-1/2 relative p-12 flex-col justify-end overflow-hidden group">
           <img
             src="/assets/images/auth-bg.png"
             alt="Automotive Culture"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent"></div>
+          <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/40 to-transparent"></div>
 
-          <div className="relative z-10 text-white max-w-[400px]">
+          <div className="relative z-10 text-white max-w-100">
             <h3 className="text-5xl font-black italic mb-6 leading-[1.1] drop-shadow-2xl uppercase tracking-tighter">
               More Than Wheels.<br />It's Culture.
             </h3>

@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   // filter upcoming ones
   const upcomingAppts = appointments.filter(
-    (a) => a.status !== "Cancelled" && new Date(a.date) >= new Date()
+    (a) => a.status !== "Cancelled" && new Date(a.date) >= new Date(),
   );
 
   // pending credit payments
@@ -38,8 +38,7 @@ export default function Dashboard() {
 
   return (
     <CustomerLayout pageTitle="Dashboard">
-
-      <div className="bg-gradient-to-r from-sky-600 to-indigo-700 rounded-2xl p-6 sm:p-8 mb-6 text-white">
+      <div className="bg-linear-to-r from-sky-600 to-indigo-700 rounded-2xl p-6 sm:p-8 mb-6 text-white">
         <h1 className="text-2xl font-bold">
           Welcome, {profile?.fullName || "Customer"}!
         </h1>
@@ -77,52 +76,84 @@ export default function Dashboard() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-
         <div className="lg:col-span-2 space-y-6">
-
           <div className="bg-white rounded-xl p-5 border border-slate-200">
             <h3 className="font-bold text-slate-800 mb-3">Quick Actions</h3>
             <div className="grid sm:grid-cols-2 gap-3">
-              <ActionLink to="/customer/appointments" label="Book Appointment" desc="Schedule a service" />
-              <ActionLink to="/customer/requests" label="Request a Part" desc="Ask for unavailable parts" />
-              <ActionLink to="/customer/reviews" label="Write a Review" desc="Share your feedback" />
-              <ActionLink to="/customer/vehicles" label="Add Vehicle" desc="Register a new vehicle" />
+              <ActionLink
+                to="/customer/appointments"
+                label="Book Appointment"
+                desc="Schedule a service"
+              />
+              <ActionLink
+                to="/customer/requests"
+                label="Request a Part"
+                desc="Ask for unavailable parts"
+              />
+              <ActionLink
+                to="/customer/reviews"
+                label="Write a Review"
+                desc="Share your feedback"
+              />
+              <ActionLink
+                to="/customer/vehicles"
+                label="Add Vehicle"
+                desc="Register a new vehicle"
+              />
             </div>
           </div>
 
           <div className="bg-white rounded-xl p-5 border border-slate-200">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-slate-800">Upcoming Appointments</h3>
-              <Link to="/customer/appointments" className="text-sm text-sky-600 hover:text-sky-700">
+              <h3 className="font-bold text-slate-800">
+                Upcoming Appointments
+              </h3>
+              <Link
+                to="/customer/appointments"
+                className="text-sm text-sky-600 hover:text-sky-700"
+              >
                 View all →
               </Link>
             </div>
             {upcomingAppts.length === 0 ? (
               <p className="text-sm text-slate-400 py-4 text-center">
                 No upcoming appointments.{" "}
-                <Link to="/customer/appointments" className="text-sky-600">Book one</Link>
+                <Link to="/customer/appointments" className="text-sky-600">
+                  Book one
+                </Link>
               </p>
             ) : (
               <div className="space-y-2">
                 {upcomingAppts.slice(0, 3).map((apt) => (
-                  <div key={apt.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                  <div
+                    key={apt.id}
+                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
+                  >
                     <div className="text-center flex-shrink-0">
                       <p className="text-xs text-sky-600 font-semibold">
-                        {new Date(apt.date).toLocaleDateString("en", { month: "short" })}
+                        {new Date(apt.date).toLocaleDateString("en", {
+                          month: "short",
+                        })}
                       </p>
                       <p className="text-lg font-bold text-sky-700">
                         {new Date(apt.date).getDate()}
                       </p>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800">{apt.serviceType}</p>
-                      <p className="text-xs text-slate-400">{apt.vehicleName} • {apt.time}</p>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {apt.serviceType}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {apt.vehicleName} • {apt.time}
+                      </p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                      apt.status === "Confirmed"
-                        ? "bg-green-50 text-green-700"
-                        : "bg-amber-50 text-amber-700"
-                    }`}>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                        apt.status === "Confirmed"
+                          ? "bg-green-50 text-green-700"
+                          : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
                       {apt.status}
                     </span>
                   </div>
@@ -133,14 +164,16 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-6">
-
           {creditItems.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               <h4 className="text-sm font-bold text-red-800">Pending Credit</h4>
               <p className="text-xs text-red-600 mt-1">
                 You have Rs. {creditTotal.toLocaleString()} in unpaid balance.
               </p>
-              <Link to="/customer/history" className="text-xs text-red-700 font-semibold mt-2 inline-block">
+              <Link
+                to="/customer/history"
+                className="text-xs text-red-700 font-semibold mt-2 inline-block"
+              >
                 View details →
               </Link>
             </div>
@@ -149,23 +182,37 @@ export default function Dashboard() {
           <div className="bg-white rounded-xl p-5 border border-slate-200">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-slate-800">Recent Purchases</h3>
-              <Link to="/customer/history" className="text-sm text-sky-600 hover:text-sky-700">
+              <Link
+                to="/customer/history"
+                className="text-sm text-sky-600 hover:text-sky-700"
+              >
                 View all →
               </Link>
             </div>
             {history.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">No purchase history yet.</p>
+              <p className="text-sm text-slate-400 text-center py-4">
+                No purchase history yet.
+              </p>
             ) : (
               <div className="space-y-2">
                 {history.slice(0, 4).map((item) => (
-                  <div key={item.id} className="flex justify-between py-2 border-b border-slate-50 last:border-0">
+                  <div
+                    key={item.id}
+                    className="flex justify-between py-2 border-b border-slate-50 last:border-0"
+                  >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{item.description}</p>
+                      <p className="text-sm font-medium text-slate-700 truncate">
+                        {item.description}
+                      </p>
                       <p className="text-xs text-slate-400">{item.date}</p>
                     </div>
                     <div className="text-right ml-3">
-                      <p className="text-sm font-bold text-slate-800">Rs. {item.amount?.toLocaleString()}</p>
-                      <span className={`text-xs ${item.status === "Paid" ? "text-green-600" : "text-red-600"}`}>
+                      <p className="text-sm font-bold text-slate-800">
+                        Rs. {item.amount?.toLocaleString()}
+                      </p>
+                      <span
+                        className={`text-xs ${item.status === "Paid" ? "text-green-600" : "text-red-600"}`}
+                      >
                         {item.status}
                       </span>
                     </div>
@@ -178,7 +225,8 @@ export default function Dashboard() {
           <div className="bg-slate-800 rounded-xl p-5 text-white">
             <h3 className="font-bold mb-2">About GadiSewa</h3>
             <p className="text-sm text-slate-300">
-              Your trusted vehicle service center. Genuine parts, expert servicing, fair pricing.
+              Your trusted vehicle service center. Genuine parts, expert
+              servicing, fair pricing.
             </p>
             <div className="mt-3 space-y-1.5 text-xs text-slate-400">
               <p>📍 Kathmandu, Nepal</p>
@@ -195,7 +243,10 @@ export default function Dashboard() {
 // small stat card
 function StatCard({ label, value, link }) {
   return (
-    <Link to={link} className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow transition">
+    <Link
+      to={link}
+      className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow transition"
+    >
       <p className="text-xs text-slate-500">{label}</p>
       <p className="text-xl font-bold text-slate-800 mt-1">{value}</p>
     </Link>
@@ -205,7 +256,10 @@ function StatCard({ label, value, link }) {
 // action link card
 function ActionLink({ to, label, desc }) {
   return (
-    <Link to={to} className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-sky-200 transition">
+    <Link
+      to={to}
+      className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-sky-200 transition"
+    >
       <div className="flex-1">
         <p className="text-sm font-semibold text-slate-800">{label}</p>
         <p className="text-xs text-slate-400">{desc}</p>

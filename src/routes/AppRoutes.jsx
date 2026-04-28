@@ -16,7 +16,6 @@ const AppRoutes = () => {
       
       {/* Default/Redirect Routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 };
