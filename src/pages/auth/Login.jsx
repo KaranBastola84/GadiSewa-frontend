@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, Navigate } from "react-router-dom";
 import { AUTH_BG_IMAGE } from "../../constants";
 import authService from "../../services/authService";
 import { useAuthContext, USER_ROLES } from "../../context/AuthContext";
 
 const Login = () => {
-  const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuthContext();
-
+  const { login, isAuthenticated, user } = useAuthContext();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -17,12 +15,16 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/dashboard");
-    }
-  }, [isAuthenticated, navigate]);
+  const getRedirectPath = (role) => {
+    if (role === USER_ROLES.ADMIN) return "/admin-dashboard";
+    if (role === USER_ROLES.STAFF) return "/staff-dashboard";
+    if (role === USER_ROLES.CUSTOMER) return "/customer/dashboard";
+    return "/dashboard";
+  };
+
+  if (isAuthenticated) {
+    return <Navigate to={getRedirectPath(user?.role)} replace />;
+  }
 
   const validate = () => {
     const newErrors = {};
@@ -69,17 +71,6 @@ const Login = () => {
         if (response?.isSuccess && response?.result) {
           const authData = response.result;
           login(authData);
-
-          // Redirect based on role
-          if (authData.role === USER_ROLES.ADMIN) {
-            navigate("/admin-dashboard");
-          } else if (authData.role === USER_ROLES.STAFF) {
-            navigate("/staff-dashboard");
-          } else if (authData.role === USER_ROLES.CUSTOMER) {
-            navigate("/customer/dashboard");
-          } else {
-            navigate("/dashboard");
-          }
         } else {
           setErrors({
             general: response?.errorMessage?.[0] || "Login failed",

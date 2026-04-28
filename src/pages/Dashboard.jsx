@@ -1,26 +1,25 @@
-import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { Navigate } from "react-router-dom";
 import { useAuthContext, USER_ROLES } from "../context/AuthContext";
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthContext();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
-    // Redirect based on user role
-    if (user?.role === USER_ROLES.CUSTOMER) {
-      navigate("/customer/dashboard");
-    } else if (user?.role === USER_ROLES.STAFF) {
-      navigate("/staff-dashboard");
-    } else if (user?.role === USER_ROLES.ADMIN) {
-      navigate("/admin-dashboard");
-    }
-  }, [user, isAuthenticated, navigate]);
+  if (user?.role === USER_ROLES.CUSTOMER) {
+    return <Navigate to="/customer/dashboard" replace />;
+  }
+
+  if (user?.role === USER_ROLES.STAFF) {
+    return <Navigate to="/staff-dashboard" replace />;
+  }
+
+  if (user?.role === USER_ROLES.ADMIN) {
+    return <Navigate to="/admin-dashboard" replace />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100">
