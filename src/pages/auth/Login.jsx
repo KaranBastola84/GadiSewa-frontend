@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import authService from '../../services/authService';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -39,12 +40,41 @@ const Login = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
       setIsLoading(true);
-      console.log('Login logic here', formData);
-      setTimeout(() => setIsLoading(false), 2000);
+      setErrors({}); // Clear previous errors
+
+      try {
+        const credentials = {
+          email: formData.email,
+          password: formData.password
+        };
+
+        const response = await authService.loginUser(credentials);
+
+        // On success: Store user data in localStorage
+        // Assuming response structure contains token and user info
+        if (response.token) {
+          localStorage.setItem('token', response.token);
+        }
+
+        // Storing name and role as requested
+        localStorage.setItem('userName', response.fullName || response.userName || 'User');
+        localStorage.setItem('userRole', response.role || 'User');
+
+        // Redirect to Dashboard page
+        window.location.href = '/dashboard';
+      } catch (err) {
+        // On failure: Show error message
+        console.error('Login Error:', err);
+        setErrors({
+          general: err.message || 'Invalid email or password'
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -79,16 +109,23 @@ const Login = () => {
             <p className="text-slate-400 text-sm">Please enter your details</p>
           </div>
 
+          {errors.general && (
+            <div className="w-full max-w-[340px] p-3 mb-4 bg-red-50 border border-red-100 rounded-lg text-red-500 text-xs text-center">
+              {errors.general}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="w-full max-w-[340px] space-y-4">
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email address</label>
               <input
                 name="email"
                 type="email"
+                autoComplete="off"
                 placeholder="Enter your email address"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-lg text-sm focus:outline-none focus:border-slate-300 transition-all placeholder:text-slate-300"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-slate-300 transition-all placeholder:text-slate-300"
               />
               {errors.email && <p className="text-[10px] text-red-500 ml-1">{errors.email}</p>}
             </div>
@@ -102,10 +139,11 @@ const Login = () => {
                 <input
                   name="password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-lg text-sm focus:outline-none focus:border-slate-300 transition-all placeholder:text-slate-300"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-slate-300 transition-all placeholder:text-slate-300"
                 />
                 <button
                   type="button"

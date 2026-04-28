@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import authService from '../../services/authService';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -34,11 +35,58 @@ const Register = () => {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
       setIsLoading(true);
-      setTimeout(() => setIsLoading(false), 2000);
+      setErrors({}); // Clear previous errors
+      
+      try {
+        // Map phone to phoneNumber to match backend DTO
+        const { fullName, phone, confirmPassword, agreeTerms, ...rest } = formData;
+        
+        // Split FullName into FirstName and LastName
+        const nameParts = fullName.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || ' '; // Default to space if no last name provided
+
+        // Map role to integer if backend expects Enum
+        const roleMapping = {
+          'Admin': 0,
+          'Customer': 1,
+          'Staff': 2
+        };
+
+        const submitData = { 
+          FirstName: firstName,
+          LastName: lastName,
+          Email: rest.email,
+          Password: rest.password,
+          PhoneNumber: phone,
+          Role: roleMapping[formData.role] ?? 1 // Default to Customer (1)
+        };
+
+        const response = await authService.registerUser(submitData);
+        
+        // On success: Show success message and redirect
+        alert('Registration successful! Please login.');
+        window.location.href = '/login';
+      } catch (err) {
+        // On error: Show proper error message from backend
+        console.error('Registration Error:', err);
+        
+        // Handle different error formats
+        let errorMsg = 'Registration failed. Please try again.';
+        if (err.message) errorMsg = err.message;
+        if (typeof err === 'string') errorMsg = err;
+        if (err.errors) errorMsg = Object.values(err.errors).flat().join(', ');
+
+        setErrors({ 
+          general: errorMsg 
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -86,29 +134,40 @@ const Register = () => {
             <p className="text-slate-400 text-sm">Join the elite community</p>
           </div>
 
+          {errors.general && (
+            <div className="w-full max-w-[380px] p-3 mb-4 bg-red-50 border border-red-100 rounded-lg text-red-500 text-xs text-center">
+              {errors.general}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="w-full max-w-[380px] space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                <input name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs focus:outline-none focus:border-slate-300 transition-all" />
+                <input name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-                <input name="email" type="email" placeholder="john@doe.com" value={formData.email} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs focus:outline-none focus:border-slate-300 transition-all" />
+                <input name="email" type="email" placeholder="john@doe.com" value={formData.email} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Phone</label>
-                <input name="phone" placeholder="9812345678" value={formData.phone} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs focus:outline-none focus:border-slate-300 transition-all" />
+                <input name="phone" placeholder="9812345678" value={formData.phone} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Role</label>
-                <select name="role" value={formData.role} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs focus:outline-none focus:border-slate-300 transition-all appearance-none cursor-pointer">
-                  <option>Customer</option>
-                  <option>Staff</option>
-                  <option>Admin</option>
+                <select 
+                  name="role" 
+                  value={formData.role} 
+                  onChange={handleChange} 
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all cursor-pointer"
+                >
+                  <option value="Customer">Customer</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Admin">Admin</option>
                 </select>
               </div>
             </div>
@@ -116,11 +175,11 @@ const Register = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
-                <input name="password" type="password" placeholder="••••••••" value={formData.password} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs focus:outline-none focus:border-slate-300 transition-all" />
+                <input name="password" type="password" placeholder="Enter password" value={formData.password} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Confirm</label>
-                <input name="confirmPassword" type="password" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs focus:outline-none focus:border-slate-300 transition-all" />
+                <input name="confirmPassword" type="password" placeholder="Confirm password" value={formData.confirmPassword} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
               </div>
             </div>
 
