@@ -64,8 +64,12 @@ const Login = () => {
         localStorage.setItem('userName', response.fullName || response.userName || 'User');
         localStorage.setItem('userRole', response.role || 'User');
 
-        // Redirect to Dashboard page
-        window.location.href = '/dashboard';
+        // Redirect based on role
+        if (response.role === 2 || response.role === 'Staff') {
+          window.location.href = '/staff/dashboard';
+        } else {
+          window.location.href = '/dashboard';
+        }
       } catch (err) {
         // On failure: Show error message
         console.error('Login Error:', err);
