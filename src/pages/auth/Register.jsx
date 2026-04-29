@@ -9,7 +9,6 @@ const Register = () => {
     phone: '',
     password: '',
     confirmPassword: '',
-    role: 'Customer',
     agreeTerms: false
   });
   const [errors, setErrors] = useState({});
@@ -19,9 +18,10 @@ const Register = () => {
     const newErrors = {};
     if (!formData.fullName.trim()) newErrors.fullName = 'Full name required';
     if (!formData.email) newErrors.email = 'Email required';
+    if (!formData.phone) newErrors.phone = 'Phone number required';
     if (!formData.password) newErrors.password = 'Password required';
-    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Mismatch';
-    if (!formData.agreeTerms) newErrors.agreeTerms = 'Required';
+    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (!formData.agreeTerms) newErrors.agreeTerms = 'You must agree to terms';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -39,51 +39,32 @@ const Register = () => {
     e.preventDefault();
     if (validate()) {
       setIsLoading(true);
-      setErrors({}); // Clear previous errors
+      setErrors({}); 
       
       try {
-        // Map phone to phoneNumber to match backend DTO
-        const { fullName, phone, confirmPassword, agreeTerms, ...rest } = formData;
-        
-        // Split FullName into FirstName and LastName
-        const nameParts = fullName.trim().split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || ' '; // Default to space if no last name provided
-
-        // Map role to integer if backend expects Enum
-        const roleMapping = {
-          'Admin': 0,
-          'Customer': 1,
-          'Staff': 2
-        };
-
+        // Send only the required fields as per requirements
         const submitData = { 
-          FirstName: firstName,
-          LastName: lastName,
-          Email: rest.email,
-          Password: rest.password,
-          PhoneNumber: phone,
-          Role: roleMapping[formData.role] ?? 1 // Default to Customer (1)
+          fullName: formData.fullName,
+          email: formData.email,
+          phoneNumber: formData.phone,
+          password: formData.password
         };
 
-        const response = await authService.registerUser(submitData);
+        await authService.registerUser(submitData);
         
-        // On success: Show success message and redirect
+        // On success: Show success message and redirect to Login
         alert('Registration successful! Please login.');
         window.location.href = '/login';
       } catch (err) {
-        // On error: Show proper error message from backend
         console.error('Registration Error:', err);
         
-        // Handle different error formats
+        // Extract backend error message
         let errorMsg = 'Registration failed. Please try again.';
         if (err.message) errorMsg = err.message;
         if (typeof err === 'string') errorMsg = err;
         if (err.errors) errorMsg = Object.values(err.errors).flat().join(', ');
 
-        setErrors({ 
-          general: errorMsg 
-        });
+        setErrors({ general: errorMsg });
       } finally {
         setIsLoading(false);
       }
@@ -92,7 +73,6 @@ const Register = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-6 lg:p-12">
-      {/* Global Background */}
       <div 
         className="absolute inset-0 z-0 overflow-hidden"
         style={{
@@ -104,10 +84,8 @@ const Register = () => {
         }}
       ></div>
 
-      {/* Main Register Card */}
       <div className="relative z-10 w-full max-w-[1000px] flex flex-col md:flex-row bg-white rounded-[32px] overflow-hidden shadow-2xl">
         
-        {/* Left Side - Image (Flipped composition) */}
         <div className="hidden md:block w-1/2 relative p-12 flex flex-col justify-end overflow-hidden group">
           <img 
             src="/assets/images/auth-bg.png" 
@@ -115,13 +93,11 @@ const Register = () => {
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-          
           <div className="relative z-10 text-white max-w-[340px]">
             <h3 className="text-4xl font-bold mb-4 leading-tight drop-shadow-lg">Start Your Journey Today.</h3>
           </div>
         </div>
 
-        {/* Right Side - Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col items-center">
           <div className="mb-6 text-center">
             <h1 className="text-3xl font-black italic tracking-tighter text-slate-900 uppercase">
@@ -141,34 +117,22 @@ const Register = () => {
           )}
 
           <form onSubmit={handleSubmit} className="w-full max-w-[380px] space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                <input name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-                <input name="email" type="email" placeholder="john@doe.com" value={formData.email} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
-              </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+              <input name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
+              {errors.fullName && <p className="text-[9px] text-red-500 ml-1">{errors.fullName}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Phone</label>
-                <input name="phone" placeholder="9812345678" value={formData.phone} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                <input name="email" type="email" placeholder="john@doe.com" value={formData.email} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
+                {errors.email && <p className="text-[9px] text-red-500 ml-1">{errors.email}</p>}
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Role</label>
-                <select 
-                  name="role" 
-                  value={formData.role} 
-                  onChange={handleChange} 
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all cursor-pointer"
-                >
-                  <option value="Customer">Customer</option>
-                  <option value="Staff">Staff</option>
-                  <option value="Admin">Admin</option>
-                </select>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                <input name="phone" placeholder="9812345678" value={formData.phone} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
+                {errors.phone && <p className="text-[9px] text-red-500 ml-1">{errors.phone}</p>}
               </div>
             </div>
 
@@ -176,10 +140,12 @@ const Register = () => {
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
                 <input name="password" type="password" placeholder="Enter password" value={formData.password} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
+                {errors.password && <p className="text-[9px] text-red-500 ml-1">{errors.password}</p>}
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Confirm</label>
                 <input name="confirmPassword" type="password" placeholder="Confirm password" value={formData.confirmPassword} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-slate-300 transition-all" />
+                {errors.confirmPassword && <p className="text-[9px] text-red-500 ml-1">{errors.confirmPassword}</p>}
               </div>
             </div>
 
