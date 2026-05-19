@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useAuthContext } from "../../context/AuthContext";
 import partRequestsService from "../../services/partRequestsService";
 import customerService from "../../services/customerService";
+import { useAuthContext } from "../../context/AuthContext";
 
 export default function RequestsPage() {
   const { user } = useAuthContext();
-  const customerId = user?.userId;
   const [requests, setRequests] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,21 +14,20 @@ export default function RequestsPage() {
   const [form, setForm] = useState({ partName: "", brand: "", vehicleModel: "", urgency: "Medium", notes: "" });
   const [errors, setErrors] = useState({});
 
+  const customerId = user?.userId;
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [reqRes, vehRes] = await Promise.allSettled([
+      const [reqRes, vehRes] = await Promise.all([
         partRequestsService.getRequests(),
-        customerId ? customerService.getVehicles(customerId) : Promise.resolve([]),
+        customerId ? customerService.getVehicles(customerId) : Promise.resolve([])
       ]);
-      if (reqRes.status === "fulfilled") {
-        setRequests(Array.isArray(reqRes.value) ? reqRes.value : reqRes.value?.result || []);
-      }
-      if (vehRes.status === "fulfilled") {
-        setVehicles(Array.isArray(vehRes.value) ? vehRes.value : vehRes.value?.result || []);
-      }
+      setRequests(Array.isArray(reqRes) ? reqRes : reqRes?.result || reqRes?.requests || []);
+      setVehicles(Array.isArray(vehRes) ? vehRes : vehRes?.result || vehRes?.vehicles || []);
     } catch (err) {
       console.error(err);
+      setErrors({ fetch: err.message || "Failed to load data" });
     } finally {
       setLoading(false);
     }
@@ -81,6 +79,9 @@ export default function RequestsPage() {
     <CustomerLayout pageTitle="Part Requests">
       {msg && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{msg}</div>
+      )}
+      {errors.fetch && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{errors.fetch}</div>
       )}
 
       <div className="flex items-center justify-between mb-5">
@@ -179,7 +180,7 @@ export default function RequestsPage() {
               </div>
               <p className="text-sm text-slate-500">{req.vehicleModel} {req.brand && `• ${req.brand}`}</p>
               {req.notes && <p className="text-sm text-slate-400 mt-1">{req.notes}</p>}
-              <p className="text-xs text-slate-400 mt-2">Requested: {req.requestedDate}</p>
+              <p className="text-xs text-slate-400 mt-2">Requested: {req.requestedDate ? new Date(req.requestedDate).toLocaleDateString() : ""}</p>
             </div>
           ))}
         </div>

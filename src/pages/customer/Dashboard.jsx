@@ -9,14 +9,14 @@ import { Star, MapPin, Phone, Clock, ArrowRight, Sparkles } from "lucide-react";
 
 export default function Dashboard() {
   const { user, token } = useAuthContext();
-  const customerId = user?.userId;
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [history, setHistory] = useState([]);
-  const [totalSpent, setTotalSpent] = useState(0);
-  const [unreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const customerId = user?.userId;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,39 +28,42 @@ export default function Dashboard() {
           customerService.getVehicles(customerId),
           appointmentsService.getAppointments(),
           customerService.getHistory(),
-          customerService.getSalesInvoices(),
+          customerService.getSalesInvoices()
         ]);
 
         if (profRes.status === "fulfilled") {
-          setProfile(profRes.value?.result || profRes.value || null);
+          setProfile(profRes.value?.result || profRes.value?.profile || null);
         }
+
         if (vehRes.status === "fulfilled") {
           setVehicles(Array.isArray(vehRes.value) ? vehRes.value : vehRes.value?.result || []);
         }
+
         if (aptRes.status === "fulfilled") {
           setAppointments(Array.isArray(aptRes.value) ? aptRes.value : aptRes.value?.result || []);
         }
 
-        let combined = [];
+        let combinedHistory = [];
         if (histRes.status === "fulfilled") {
-          const svc = Array.isArray(histRes.value) ? histRes.value : histRes.value?.result || [];
-          combined = [...combined, ...svc.map(i => ({ ...i, type: "Service" }))];
+          const serviceData = Array.isArray(histRes.value) ? histRes.value : histRes.value?.result || [];
+          combinedHistory = [...combinedHistory, ...serviceData.map(item => ({ ...item, type: "Service" }))];
         }
         if (invRes.status === "fulfilled") {
-          const inv = Array.isArray(invRes.value) ? invRes.value : invRes.value?.result || [];
-          combined = [...combined, ...inv.map(i => ({ ...i, type: "Purchase" }))];
+          const invoiceData = Array.isArray(invRes.value) ? invRes.value : invRes.value?.result || [];
+          combinedHistory = [...combinedHistory, ...invoiceData.map(item => ({ ...item, type: "Purchase" }))];
         }
-        combined.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-        setHistory(combined);
+        
+        combinedHistory.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        setHistory(combinedHistory);
 
-        const spent = combined.filter(h => h.status === "Paid").reduce((s, h) => s + (h.amount || 0), 0);
-        setTotalSpent(spent);
+        setUnreadCount(0);
       } catch (err) {
         console.error("Dashboard fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchData();
   }, [customerId, token]);
 
@@ -68,22 +71,23 @@ export default function Dashboard() {
     return (
       <CustomerLayout pageTitle="Dashboard">
         <div className="flex items-center justify-center py-20">
-          <p className="text-slate-400">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
         </div>
       </CustomerLayout>
     );
   }
 
-  // filter upcoming ones
   const upcomingAppts = appointments.filter(
     (a) => a.status !== "Cancelled" && new Date(a.date) >= new Date(),
   );
 
-  // pending credit payments
+  const totalSpent = history
+    .filter(h => h.status === "Paid")
+    .reduce((s, h) => s + (h.amount || 0), 0);
+
   const creditItems = history.filter((h) => h.status === "Credit" || h.status === "Unpaid");
   const creditTotal = creditItems.reduce((s, h) => s + (h.amount || 0), 0);
 
-  // check loyalty eligibility
   const hasLoyalty = totalSpent >= 5000;
 
   return (
@@ -95,7 +99,7 @@ export default function Dashboard() {
             <Sparkles size={14} className="text-sky-200" /> Customer overview
           </div>
           <h1 className="mt-4 text-2xl sm:text-3xl font-bold">
-            Welcome, {profile?.fullName || "Customer"}!
+            Welcome, {profile?.fullName || user?.fullName || "Customer"}!
           </h1>
           <p className="mt-2 max-w-2xl text-sky-100">
             Manage your vehicles, book appointments, and track purchases from a
@@ -184,7 +188,7 @@ export default function Dashboard() {
               <div className="space-y-2">
                 {upcomingAppts.slice(0, 3).map((apt) => (
                   <div
-                    key={apt.id}
+                    key={apt.id || Math.random()}
                     className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
                   >
                     <div className="text-center shrink-0">
@@ -254,18 +258,24 @@ export default function Dashboard() {
               <div className="space-y-2">
                 {history.slice(0, 4).map((item) => (
                   <div
-                    key={item.id}
+                    key={item.id || Math.random()}
                     className="flex justify-between py-2 border-b border-slate-50 last:border-0"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-700 truncate">
-                        {item.description}
+                        {item.type === "Purchase" && item.id ? (
+                          <Link to={`/customer/invoice/${item.id}`} className="hover:text-sky-600 hover:underline">
+                            {item.description || "-"}
+                          </Link>
+                        ) : (
+                          item.description || "-"
+                        )}
                       </p>
-                      <p className="text-xs text-slate-400">{item.date}</p>
+                      <p className="text-xs text-slate-400">{item.date ? new Date(item.date).toLocaleDateString() : "-"}</p>
                     </div>
                     <div className="text-right ml-3">
                       <p className="text-sm font-bold text-slate-800">
-                        Rs. {item.amount?.toLocaleString()}
+                        Rs. {item.amount?.toLocaleString() || 0}
                       </p>
                       <span
                         className={`text-xs ${item.status === "Paid" ? "text-green-600" : "text-red-600"}`}

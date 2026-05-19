@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
+import { Edit2, Trash2 } from "lucide-react";
 import { useAuthContext } from "../../context/AuthContext";
 import customerService from "../../services/customerService";
-import { Edit2, Trash2 } from "lucide-react";
 
 const emptyVehicle = {
   make: "", model: "", year: "", plateNumber: "",
@@ -11,7 +11,6 @@ const emptyVehicle = {
 
 export default function VehiclesPage() {
   const { user } = useAuthContext();
-  const customerId = user?.userId;
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -20,6 +19,27 @@ export default function VehiclesPage() {
   const [errors, setErrors] = useState({});
   const [msg, setMsg] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  
+  const customerId = user?.userId;
+
+  const fetchVehicles = async () => {
+    if (!customerId) return;
+    try {
+      setLoading(true);
+      const data = await customerService.getVehicles(customerId);
+      // Ensure data is array
+      setVehicles(Array.isArray(data) ? data : data?.result || data?.vehicles || []);
+    } catch (err) {
+      console.error(err);
+      setErrors({ fetch: err.message || "Failed to load vehicles" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicles();
+  }, [customerId]);
 
   const fetchVehicles = async () => {
     if (!customerId) return;
@@ -59,7 +79,7 @@ export default function VehiclesPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate() || !customerId) return;
 
     try {
       const payload = {
@@ -80,7 +100,7 @@ export default function VehiclesPage() {
       fetchVehicles();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
-      setErrors({ submit: err.message || "Operation failed" });
+      setErrors({ submit: err.message || "Failed to save vehicle" });
     }
   }
 
@@ -97,6 +117,7 @@ export default function VehiclesPage() {
   }
 
   async function handleDelete(id) {
+    if (!customerId) return;
     try {
       await customerService.deleteVehicle(customerId, id);
       setDeleteConfirm(null);

@@ -1,7 +1,8 @@
 import apiConfig from "../config/apiConfig";
 import { normalizeApiError, unwrapApiResponse } from "./apiHelpers";
 
-const customerService = {
+export const customerService = {
+  // Vehicles
   getVehicles: async (customerId) => {
     try {
       const response = await apiConfig.get(`/Customers/${customerId}/vehicles`);
@@ -46,6 +47,7 @@ const customerService = {
     }
   },
 
+  // Service History
   getHistory: async () => {
     try {
       const response = await apiConfig.get("/customers/history");
@@ -55,32 +57,32 @@ const customerService = {
     }
   },
 
+  // Credit History
+  getCreditHistory: async (customerId) => {
+    try {
+      const response = await apiConfig.get(`/Customers/${customerId}/credit-history`);
+      return unwrapApiResponse(response, "Failed to fetch credit history");
+    } catch (error) {
+      throw normalizeApiError(error, "Failed to fetch credit history");
+    }
+  },
+
+  // Sales Invoices
   getSalesInvoices: async () => {
     try {
-      const response = await apiConfig.get("/sales-invoices");
-      return unwrapApiResponse(response, "Failed to fetch invoices");
+      const response = await apiConfig.get(`/sales-invoices`);
+      return unwrapApiResponse(response, "Failed to fetch sales invoices");
     } catch (error) {
-      throw normalizeApiError(error, "Failed to fetch invoices");
+      throw normalizeApiError(error, "Failed to fetch sales invoices");
     }
   },
 
   getSalesInvoiceById: async (id) => {
     try {
       const response = await apiConfig.get(`/sales-invoices/${id}`);
-      return unwrapApiResponse(response, "Failed to fetch invoice");
+      return unwrapApiResponse(response, "Failed to fetch sales invoice details");
     } catch (error) {
-      throw normalizeApiError(error, "Failed to fetch invoice");
-    }
-  },
-
-  getCreditHistory: async (customerId) => {
-    try {
-      const response = await apiConfig.get(
-        `/Customers/${customerId}/credit-history`,
-      );
-      return unwrapApiResponse(response, "Failed to fetch credit history");
-    } catch (error) {
-      throw normalizeApiError(error, "Failed to fetch credit history");
+      throw normalizeApiError(error, "Failed to fetch sales invoice details");
     }
   },
 };

@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useAuthContext } from "../../context/AuthContext";
 import appointmentsService from "../../services/appointmentsService";
 import customerService from "../../services/customerService";
+import { useAuthContext } from "../../context/AuthContext";
 
 const serviceTypes = [
   "Oil Change",
@@ -34,7 +34,6 @@ const timeSlots = [
 
 export default function AppointmentsPage() {
   const { user } = useAuthContext();
-  const customerId = user?.userId;
   const [vehicles, setVehicles] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,23 +49,21 @@ export default function AppointmentsPage() {
   });
   const [errors, setErrors] = useState({});
 
+  const customerId = user?.userId;
+
   const fetchData = async () => {
+    if (!customerId) return;
     try {
       setLoading(true);
-      const [aptRes, vehRes] = await Promise.allSettled([
+      const [vehRes, aptRes] = await Promise.all([
+        customerService.getVehicles(customerId),
         appointmentsService.getAppointments(),
-        customerId ? customerService.getVehicles(customerId) : Promise.resolve([]),
       ]);
-      if (aptRes.status === "fulfilled") {
-        const list = Array.isArray(aptRes.value) ? aptRes.value : aptRes.value?.result || [];
-        setAppointments(list);
-      }
-      if (vehRes.status === "fulfilled") {
-        const list = Array.isArray(vehRes.value) ? vehRes.value : vehRes.value?.result || [];
-        setVehicles(list);
-      }
+      setVehicles(Array.isArray(vehRes) ? vehRes : vehRes?.result || vehRes?.vehicles || []);
+      setAppointments(Array.isArray(aptRes) ? aptRes : aptRes?.result || aptRes?.appointments || []);
     } catch (err) {
       console.error(err);
+      setErrors({ fetch: err.message || "Failed to load data" });
     } finally {
       setLoading(false);
     }
@@ -140,10 +137,10 @@ export default function AppointmentsPage() {
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
       console.error(err);
+      setErrors({ fetch: err.message || "Failed to cancel appointment" });
     }
   }
 
-  // apply filter
   const today = new Date(new Date().toDateString());
   const filtered = appointments
     .filter((a) => {
@@ -160,6 +157,11 @@ export default function AppointmentsPage() {
       {msg && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
           {msg}
+        </div>
+      )}
+      {errors.fetch && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {errors.fetch}
         </div>
       )}
 
@@ -318,18 +320,21 @@ export default function AppointmentsPage() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition ${
-              filter === f
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition ${filter === f
                 ? "bg-sky-600 text-white"
                 : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-            }`}
+              }`}
           >
             {f}
           </button>
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
+          <p className="text-slate-400">Loading appointments...</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
           <p className="text-slate-400">No appointments found.</p>
         </div>
@@ -363,13 +368,12 @@ export default function AppointmentsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                    apt.status === "Confirmed"
+                  className={`px-2 py-0.5 rounded text-xs font-semibold ${apt.status === "Confirmed"
                       ? "bg-green-50 text-green-700"
                       : apt.status === "Cancelled"
                         ? "bg-red-50 text-red-700"
                         : "bg-amber-50 text-amber-700"
-                  }`}
+                    }`}
                 >
                   {apt.status}
                 </span>

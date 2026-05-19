@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import reviewsService from "../../services/reviewsService";
 import { Star } from "lucide-react";
+import reviewsService from "../../services/reviewsService";
 
 const serviceOptions = [
   "Oil Change", "Brake Pad Replacement", "Engine Tune-Up",
@@ -21,9 +21,10 @@ export default function ReviewsPage() {
     try {
       setLoading(true);
       const data = await reviewsService.getReviews();
-      setReviews(Array.isArray(data) ? data : data?.result || []);
+      setReviews(Array.isArray(data) ? data : data?.result || data?.reviews || []);
     } catch (err) {
       console.error(err);
+      setErrors({ fetch: err.message || "Failed to load reviews" });
     } finally {
       setLoading(false);
     }
@@ -62,13 +63,16 @@ export default function ReviewsPage() {
   }
 
   const avg = reviews.length
-    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
     : "0";
 
   return (
     <CustomerLayout pageTitle="Reviews">
       {msg && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{msg}</div>
+      )}
+      {errors.fetch && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{errors.fetch}</div>
       )}
 
       <div className="flex items-center justify-between mb-5">
@@ -162,7 +166,7 @@ export default function ReviewsPage() {
               <div className="flex justify-between mb-2">
                 <div>
                   <h4 className="font-bold text-slate-800">{r.serviceType}</h4>
-                  <p className="text-xs text-slate-400">{r.date}</p>
+                  <p className="text-xs text-slate-400">{r.date ? new Date(r.date).toLocaleDateString() : ""}</p>
                 </div>
                 <span className={`px-2 py-0.5 rounded text-xs font-bold ${
                   r.rating >= 4 ? "bg-green-50 text-green-700" : r.rating >= 3 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
