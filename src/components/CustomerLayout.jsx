@@ -89,7 +89,7 @@ export default function CustomerLayout({ children, pageTitle }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">
-              Welcome, {profile?.fullName || "Customer"} 👋
+              {profile?.fullName || "Customer"}
             </p>
             <p className="text-xs text-slate-400 truncate">
               {profile?.email || ""}
