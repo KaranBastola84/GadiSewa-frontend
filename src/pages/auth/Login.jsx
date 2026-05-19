@@ -83,6 +83,7 @@ const Login = () => {
         };
 
         const response = await authService.loginUser(credentials);
+        const authData = response?.result || response;
 
         if (response?.isSuccess && response?.result) {
           const authData = response.result;
