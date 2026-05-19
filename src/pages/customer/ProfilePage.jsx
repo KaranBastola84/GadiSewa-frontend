@@ -3,10 +3,12 @@ import CustomerLayout from "../../components/CustomerLayout";
 import { useCustomer } from "../../context/CustomerContext";
 import { useAuthContext } from "../../context/AuthContext";
 import authService from "../../services/authService";
+import customerService from "../../services/customerService";
+import { Star } from "lucide-react";
 
 export default function ProfilePage() {
-  const { profile, updateProfile, totalSpent } = useCustomer();
-  const { token } = useAuthContext();
+  const { profile, updateProfile, totalSpent, updateTotalSpent } = useCustomer();
+  const { user, token } = useAuthContext();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(() => (profile ? { ...profile } : {}));
   const [msg, setMsg] = useState("");
@@ -21,6 +23,8 @@ export default function ProfilePage() {
   const [passwordError, setPasswordError] = useState("");
   const [passwordMsg, setPasswordMsg] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const customerId = user?.userId;
 
   useEffect(() => {
     if (profile) {
@@ -65,6 +69,46 @@ export default function ProfilePage() {
       isActive = false;
     };
   }, [token, updateProfile]);
+
+  // Fetch totalSpent from real API data
+  useEffect(() => {
+    let isActive = true;
+
+    const loadSpending = async () => {
+      if (!customerId) return;
+      try {
+        const [histRes, invRes] = await Promise.allSettled([
+          customerService.getHistory(),
+          customerService.getSalesInvoices(),
+        ]);
+
+        if (!isActive) return;
+
+        let combined = [];
+        if (histRes.status === "fulfilled") {
+          const data = Array.isArray(histRes.value) ? histRes.value : histRes.value?.result || [];
+          combined = [...combined, ...data];
+        }
+        if (invRes.status === "fulfilled") {
+          const data = Array.isArray(invRes.value) ? invRes.value : invRes.value?.result || [];
+          combined = [...combined, ...data];
+        }
+
+        const spent = combined
+          .filter((h) => h.status === "Paid")
+          .reduce((s, h) => s + (h.amount || 0), 0);
+        updateTotalSpent(spent);
+      } catch (err) {
+        console.error("Failed to load spending data:", err);
+      }
+    };
+
+    loadSpending();
+
+    return () => {
+      isActive = false;
+    };
+  }, [customerId, updateTotalSpent]);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
