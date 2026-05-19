@@ -65,11 +65,10 @@ export default function CustomerLayout({ children, pageTitle }) {
               key={item.path}
               to={item.path}
               onClick={() => setMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                isActive(item.path)
-                  ? "bg-linear-to-r from-sky-500/20 to-indigo-500/20 text-white ring-1 ring-white/10"
-                  : "text-slate-300 hover:bg-white/5 hover:text-white"
-              }`}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive(item.path)
+                ? "bg-linear-to-r from-sky-500/20 to-indigo-500/20 text-white ring-1 ring-white/10"
+                : "text-slate-300 hover:bg-white/5 hover:text-white"
+                }`}
             >
               <Icon size={18} />
               {item.label}
@@ -90,7 +89,7 @@ export default function CustomerLayout({ children, pageTitle }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">
-              {profile?.fullName || "Customer"}
+              Welcome, {profile?.fullName || "Customer"} 👋
             </p>
             <p className="text-xs text-slate-400 truncate">
               {profile?.email || ""}
