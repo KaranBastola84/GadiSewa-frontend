@@ -14,7 +14,7 @@ const Dashboard = () => {
   }
 
   if (user?.role === USER_ROLES.STAFF) {
-    return <Navigate to="/staff-dashboard" replace />;
+    return <Navigate to="/staff/dashboard" replace />;
   }
 
   if (user?.role === USER_ROLES.ADMIN) {
