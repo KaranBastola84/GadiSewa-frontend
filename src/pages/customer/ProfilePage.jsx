@@ -208,7 +208,7 @@ export default function ProfilePage() {
                 </span>
                 {loyaltyActive && (
                   <span className="px-3 py-0.5 bg-amber-400/20 rounded-full text-xs font-medium text-amber-200">
-                    ⭐ Loyalty
+                    <Star size={12} className="inline mr-1" fill="currentColor" /> Loyalty
                   </span>
                 )}
               </div>
