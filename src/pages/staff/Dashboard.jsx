@@ -1,158 +1,261 @@
-import React, { useState, useEffect } from 'react';
-import { getSalesInvoices, getPartRequests, getAppointments } from '../../services/staffService';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import StaffLayout from "../../components/StaffLayout";
+import appointmentsService from "../../services/appointmentsService";
+import partRequestsService from "../../services/partRequestsService";
+import reportsService from "../../services/reportsService";
+import {
+  UserPlus,
+  Search,
+  Calendar,
+  Receipt,
+  CreditCard,
+  Wrench,
+  BarChart3,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  ArrowRight,
+} from "lucide-react";
 
-const Dashboard = () => {
-  const [stats, setStats] = useState([
-    { label: 'Total Sales (Rs.)', value: 'Rs. 0', change: '0%', icon: '💰', color: 'text-green-600' },
-    { label: 'Total Invoices', value: '0', change: '0%', icon: '👤', color: 'text-blue-600' },
-    { label: 'Part Requests', value: '0', change: '0%', icon: '⚙️', color: 'text-purple-600' },
-    { label: 'Pending Bookings', value: '0', change: '0%', icon: '⚠️', color: 'text-orange-600' }
-  ]);
-  const [recentTransactions, setRecentTransactions] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function StaffDashboard() {
+  const [stats, setStats] = useState({
+    pendingAppointments: 0,
+    activeRequests: 0,
+    pendingCredits: 0,
+  });
+  const [recentApts, setRecentApts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [aptRes, reqRes, creditRes] = await Promise.all([
+        appointmentsService.getAppointments(),
+        partRequestsService.getRequests(),
+        reportsService.getPendingCredits(),
+      ]);
+
+      const rawApts = Array.isArray(aptRes) ? aptRes : aptRes?.result || aptRes?.appointments || [];
+      const pendingApts = rawApts.filter((a) => a.status === 1).length;
+
+      const rawReqs = Array.isArray(reqRes) ? reqRes : reqRes?.result || reqRes?.requests || [];
+      const activeReqs = rawReqs.filter((r) => r.status === 1 || r.status === 4).length;
+
+      const rawCredits = Array.isArray(creditRes) ? creditRes : creditRes?.result || creditRes?.credits || [];
+      const pendingCreditCount = rawCredits.length;
+
+      setStats({
+        pendingAppointments: pendingApts,
+        activeRequests: activeReqs,
+        pendingCredits: pendingCreditCount,
+      });
+
+      // Filter recent appointments (top 5 pending/upcoming)
+      const statusMap = {
+        1: "Pending",
+        2: "Confirmed",
+        3: "Cancelled",
+        4: "Completed",
+      };
+      setRecentApts(
+        rawApts
+          .filter((a) => a.status === 1 || a.status === 2)
+          .slice(0, 5)
+          .map((a) => ({
+            id: a.id,
+            customerName: a.customerName,
+            vehicleName: `${a.vehicleName || "Vehicle"} (${a.registrationNumber})`,
+            date: a.scheduledAt,
+            statusText: statusMap[a.status] || "Pending",
+            status: a.status,
+          }))
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch dashboard stats.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const invoicesRes = await getSalesInvoices();
-        const invoices = invoicesRes?.result || invoicesRes?.data || invoicesRes || [];
-
-        const partsRes = await getPartRequests();
-        const partsList = partsRes?.result || partsRes?.data || partsRes || [];
-
-        const apptRes = await getAppointments();
-        const appts = apptRes?.result || apptRes?.data || apptRes || [];
-
-        const totalAmt = invoices.reduce((acc, inv) => acc + (inv.totalAmount || 0), 0);
-        const pendingBookings = appts.filter(a => a.status === 'Scheduled' || a.status === 'Confirmed').length;
-
-        setStats([
-          { label: 'Total Sales Value', value: `Rs. ${totalAmt.toLocaleString()}`, change: '+12%', icon: '💰', color: 'text-green-600' },
-          { label: 'Total Invoices Issued', value: invoices.length.toString(), change: '+5%', icon: '👤', color: 'text-blue-600' },
-          { label: 'Part Requests Sourced', value: partsList.length.toString(), change: '+18%', icon: '⚙️', color: 'text-purple-600' },
-          { label: 'Pending Bookings', value: pendingBookings.toString(), change: '0%', icon: '⚠️', color: 'text-orange-600' }
-        ]);
-
-        // Map recent transactions
-        const mappedTx = invoices.slice(0, 4).map(inv => ({
-          id: inv.invoiceNumber || `INV-${inv.id.slice(0, 8)}`,
-          customer: inv.customerName || 'Walk-in Customer',
-          part: inv.vehicleRegistration || 'Service Rendered',
-          amount: `Rs. ${(inv.totalAmount || 0).toLocaleString()}`,
-          status: inv.status === 'Paid' || inv.amountDue === 0 ? 'Paid' : 'Credit'
-        }));
-        setRecentTransactions(mappedTx);
-
-      } catch (err) {
-        // Safe offline default visual mock in case backend services are unreachable during init
-        setStats([
-          { label: 'Total Sales Today', value: 'Rs. 45,200', change: '+12%', icon: '💰', color: 'text-green-600' },
-          { label: 'Customers Registered', value: '124', change: '+5%', icon: '👤', color: 'text-blue-600' },
-          { label: 'Part Sales', value: '48', change: '+18%', icon: '⚙️', color: 'text-purple-600' },
-          { label: 'Credit Overdue', value: '8 Users', change: '-2%', icon: '⚠️', color: 'text-orange-600' }
-        ]);
-        setRecentTransactions([
-          { id: 'INV-001', customer: 'Ramesh Koirala', part: 'Brake Pad Replacement', amount: 'Rs. 2,500', status: 'Paid' },
-          { id: 'INV-002', customer: 'Sita Sharma', part: 'Engine Oil Filter', amount: 'Rs. 4,200', status: 'Credit' }
-        ]);
-      } finally {
-        setIsLoading(false);
-      }
-    })();
+    loadData();
   }, []);
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-black italic tracking-tighter text-slate-900 uppercase">Staff Dashboard</h1>
-        <p className="text-slate-400 font-medium">Welcome back! Here's an overview of today's activities.</p>
-      </div>
+  const quickActions = [
+    {
+      to: "/staff/customers/register",
+      title: "Register Customer",
+      desc: "Add a new customer and vehicle to system",
+      icon: UserPlus,
+      color: "from-sky-500 to-cyan-500 shadow-sky-500/10",
+    },
+    {
+      to: "/staff/customers/search",
+      title: "Customer Search",
+      desc: "Find profile by name, phone, or plate number",
+      icon: Search,
+      color: "from-indigo-500 to-blue-500 shadow-indigo-500/10",
+    },
+    {
+      to: "/staff/appointments",
+      title: "Appointments Board",
+      desc: "Manage and update booking slots",
+      icon: Calendar,
+      color: "from-violet-500 to-fuchsia-500 shadow-violet-500/10",
+    },
+    {
+      to: "/staff/invoices/create",
+      title: "Create Invoice",
+      desc: "Generate bill with parts selection & loyalty check",
+      icon: Receipt,
+      color: "from-emerald-500 to-teal-500 shadow-emerald-500/10",
+    },
+    {
+      to: "/staff/credit-payments",
+      title: "Record Payment",
+      desc: "Record payment against client due invoices",
+      icon: CreditCard,
+      color: "from-rose-500 to-pink-500 shadow-rose-500/10",
+    },
+    {
+      to: "/staff/reports",
+      title: "Customer Reports",
+      desc: "Analyze top spenders, regulars, & credits due",
+      icon: BarChart3,
+      color: "from-amber-500 to-orange-500 shadow-amber-500/10",
+    },
+  ];
 
-      {isLoading ? (
-        <div className="flex justify-center items-center h-48">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-950"></div>
+  return (
+    <StaffLayout pageTitle="Welcome to GadiSewa Back-Office" subtitle="Operate service center tasks efficiently">
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-slate-900" />
         </div>
       ) : (
-        <>
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
-              <div key={index} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-2xl">{stat.icon}</span>
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                    stat.change.startsWith('+') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                  }`}>
-                    {stat.change}
-                  </span>
+        <div className="space-y-8">
+          {error && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-sm flex items-center gap-2">
+              <AlertCircle size={16} />
+              {error}
+            </div>
+          )}
+
+          {/* Stats Overview */}
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs relative overflow-hidden">
+              <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 mb-4">
+                <Clock size={20} />
+              </div>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-400 font-semibold">Pending Appointments</p>
+              <p className="mt-2 text-4xl font-black text-slate-900">{stats.pendingAppointments}</p>
+              <Link to="/staff/appointments" className="mt-4 text-xs font-bold text-sky-600 inline-flex items-center gap-1 hover:underline">
+                Review bookings <ArrowRight size={12} />
+              </Link>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs relative overflow-hidden">
+              <div className="w-10 h-10 rounded-2xl bg-sky-50 flex items-center justify-center text-sky-600 mb-4">
+                <Wrench size={20} />
+              </div>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-400 font-semibold">Active Part Requests</p>
+              <p className="mt-2 text-4xl font-black text-slate-900">{stats.activeRequests}</p>
+              <Link to="/staff/part-requests" className="mt-4 text-xs font-bold text-sky-600 inline-flex items-center gap-1 hover:underline">
+                Manage requests <ArrowRight size={12} />
+              </Link>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs relative overflow-hidden">
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600 mb-4">
+                <AlertCircle size={20} />
+              </div>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-400 font-semibold">Invoices Overdue/Credit</p>
+              <p className="mt-2 text-4xl font-black text-slate-900">{stats.pendingCredits}</p>
+              <Link to="/staff/reports" className="mt-4 text-xs font-bold text-sky-600 inline-flex items-center gap-1 hover:underline">
+                Review debtors <ArrowRight size={12} />
+              </Link>
+            </div>
+          </div>
+
+          {/* Quick Actions Grid */}
+          <div>
+            <h3 className="text-xs uppercase tracking-[0.24em] text-slate-400 font-semibold mb-5">Quick Operations</h3>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {quickActions.map((action, idx) => {
+                const Icon = action.icon;
+                return (
+                  <Link
+                    key={idx}
+                    to={action.to}
+                    className="group rounded-3xl border border-slate-200/60 bg-white p-6 hover:shadow-lg hover:border-slate-300 transition-all duration-300 flex items-start gap-4 relative"
+                  >
+                    <div className={`w-12 h-12 rounded-2xl bg-linear-to-br ${action.color} flex items-center justify-center text-white shrink-0 shadow-md`}>
+                      <Icon size={22} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-slate-900 group-hover:text-sky-600 transition-colors">
+                        {action.title}
+                      </h4>
+                      <p className="mt-1 text-xs text-slate-400 leading-relaxed">{action.desc}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Recent Appointments Board */}
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xs uppercase tracking-[0.24em] text-slate-400 font-semibold">Active Bookings</h3>
+              <Link to="/staff/appointments" className="text-xs font-bold text-sky-600 inline-flex items-center gap-1 hover:underline">
+                View all bookings <ArrowRight size={12} />
+              </Link>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+              {recentApts.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-sm">
+                  All clear! No pending or confirmed appointments at the moment.
                 </div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                <p className={`text-2xl font-black mt-1 ${stat.color}`}>{stat.value}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Recent Transactions */}
-            <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-slate-900 uppercase tracking-tighter italic">Recent Transactions</h2>
-                <a href="/staff/invoices" className="text-xs font-bold text-blue-600 hover:underline tracking-widest uppercase">View All</a>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-slate-50/50">
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Invoice</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {recentTransactions.map((tx) => (
-                      <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 text-xs font-bold text-slate-900">{tx.id}</td>
-                        <td className="px-6 py-4">
-                          <p className="text-xs font-bold text-slate-900">{tx.customer}</p>
-                          <p className="text-[10px] text-slate-400 uppercase tracking-tighter font-medium mt-0.5">{tx.part}</p>
-                        </td>
-                        <td className="px-6 py-4 text-xs font-bold text-slate-900">{tx.amount}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                            tx.status === 'Paid' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'
-                          }`}>
-                            {tx.status}
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {recentApts.map((apt) => (
+                    <div key={apt.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-950">{apt.customerName}</p>
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                              apt.status === 2 ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {apt.statusText}
                           </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-4">
-              <h2 className="text-lg font-bold text-slate-900 uppercase tracking-tighter italic mb-2">Quick Actions</h2>
-              <a href="/staff/invoices/create" className="w-full bg-[#1a1a1a] hover:bg-black text-white p-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-between">
-                POS Create Invoice
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-              </a>
-              <a href="/staff/customers/register" className="w-full border border-slate-200 hover:border-slate-400 text-slate-900 p-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-between">
-                Register Customer
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
-              </a>
-              <a href="/staff/customers/search" className="w-full border border-slate-200 hover:border-slate-400 text-slate-900 p-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center justify-between">
-                Search Customer Records
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              </a>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {apt.vehicleName} • Scheduled: {new Date(apt.date).toLocaleString()}
+                        </p>
+                      </div>
+                      <Link
+                        to="/staff/appointments"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-xs"
+                      >
+                        Details
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        </>
+        </div>
       )}
-    </div>
+    </StaffLayout>
   );
-};
-
-export default Dashboard;
+}

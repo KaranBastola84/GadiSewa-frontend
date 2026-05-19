@@ -13,6 +13,7 @@ import UsersPage from "../pages/admin/UsersPage";
 import PurchaseInvoicesPage from "../pages/admin/PurchaseInvoicesPage";
 import FinancialReportsPage from "../pages/admin/FinancialReportsPage";
 import InventoryReportsPage from "../pages/admin/InventoryReportsPage";
+import AdminNotificationsPage from "../pages/admin/NotificationsPage";
 import CustomerDashboard from "../pages/customer/Dashboard";
 import ProfilePage from "../pages/customer/ProfilePage";
 import VehiclesPage from "../pages/customer/VehiclesPage";
@@ -22,6 +23,20 @@ import RequestsPage from "../pages/customer/RequestsPage";
 import ReviewsPage from "../pages/customer/ReviewsPage";
 import NotificationsPage from "../pages/customer/NotificationsPage";
 import InvoiceDetailPage from "../pages/customer/InvoiceDetailPage";
+
+// Staff Module Pages
+import StaffDashboard from "../pages/staff/Dashboard";
+import RegisterCustomerPage from "../pages/staff/RegisterCustomerPage";
+import CustomerSearchPage from "../pages/staff/CustomerSearchPage";
+import CustomerProfilePage from "../pages/staff/CustomerProfilePage";
+import SalesInvoiceListPage from "../pages/staff/SalesInvoiceListPage";
+import CreateSalesInvoicePage from "../pages/staff/CreateSalesInvoicePage";
+import StaffInvoiceDetailPage from "../pages/staff/InvoiceDetailPage";
+import StaffAppointmentsPage from "../pages/staff/AppointmentsPage";
+import CustomerReportsPage from "../pages/staff/CustomerReportsPage";
+import StaffPartRequestsPage from "../pages/staff/PartRequestsPage";
+import StaffCreditPaymentsPage from "../pages/staff/CreditPaymentsPage";
+
 import ProtectedRoute from "../components/ProtectedRoute";
 import { USER_ROLES } from "../context/AuthContext";
 
@@ -102,7 +117,106 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/notifications"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
+            <AdminNotificationsPage />
+          </ProtectedRoute>
+        }
+      />
 
+      {/* Staff Routes - Protected */}
+      <Route
+        path="/staff/dashboard"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <StaffDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/customers/register"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <RegisterCustomerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/customers/search"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <CustomerSearchPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/customers/:id/full-profile"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <CustomerProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/invoices"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <SalesInvoiceListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/invoices/create"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <CreateSalesInvoicePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/invoices/:id"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <StaffInvoiceDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/appointments"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <StaffAppointmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/reports"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <CustomerReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/part-requests"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <StaffPartRequestsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/credit-payments"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF, USER_ROLES.ADMIN]}>
+            <StaffCreditPaymentsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Customer Routes - Protected */}
       <Route
         path="/customer/dashboard"
         element={

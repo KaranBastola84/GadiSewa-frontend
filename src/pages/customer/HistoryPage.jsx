@@ -16,7 +16,7 @@ export default function HistoryPage() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const customerId = user?.userId;
+  const customerId = user?.customerId;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +32,23 @@ export default function HistoryPage() {
         let combined = [];
 
         if (historyRes.status === "fulfilled") {
-          const serviceData = Array.isArray(historyRes.value) ? historyRes.value : historyRes.value?.result || [];
+          const summary = historyRes.value?.result || historyRes.value || {};
+          const appointments = summary.recentAppointments || [];
+          const invoices = summary.recentInvoices || [];
+          
+          const serviceData = appointments.map(item => {
+            const linkedInvoice = invoices.find(inv => inv.appointmentId === item.appointmentId);
+            return {
+              id: linkedInvoice?.invoiceId || item.appointmentId,
+              invoiceNo: linkedInvoice?.invoiceNumber || item.appointmentNumber,
+              date: item.completedAt || item.scheduledAt,
+              description: item.problemDescription || "Vehicle Service",
+              vehicle: item.vehicleRegistration,
+              amount: linkedInvoice?.totalAmount || 0,
+              discount: linkedInvoice?.discountAmount || 0,
+              status: linkedInvoice?.status || item.status,
+            };
+          });
           combined = [...combined, ...serviceData.map(item => ({
             ...item,
             type: "Service"
@@ -40,7 +56,17 @@ export default function HistoryPage() {
         }
 
         if (invoicesRes.status === "fulfilled") {
-          const invoiceData = Array.isArray(invoicesRes.value) ? invoicesRes.value : invoicesRes.value?.result || [];
+          const invoices = Array.isArray(invoicesRes.value) ? invoicesRes.value : invoicesRes.value?.result || [];
+          const invoiceData = invoices.map(item => ({
+            id: item.invoiceId,
+            invoiceNo: item.invoiceNumber,
+            date: item.invoiceDate,
+            description: item.items?.[0]?.description || "Parts Purchase",
+            vehicle: "-",
+            amount: item.totalAmount,
+            discount: item.discountAmount,
+            status: item.status,
+          }));
           combined = [...combined, ...invoiceData.map(item => ({
             ...item,
             type: "Purchase"
@@ -54,8 +80,16 @@ export default function HistoryPage() {
         setTotalSpent(spent);
 
         if (creditRes.status === "fulfilled") {
-          const creditData = Array.isArray(creditRes.value) ? creditRes.value : creditRes.value?.result || [];
-          setCreditHistory(creditData);
+          const creditData = creditRes.value?.result?.payments || creditRes.value?.payments || [];
+          const mappedCredit = creditData.map(item => ({
+            id: item.creditPaymentId,
+            date: item.paymentDate,
+            description: item.notes || `Payment for ${item.invoiceNumber}`,
+            amount: item.amount,
+            type: "Payment",
+            balance: item.amountAfterPayment
+          }));
+          setCreditHistory(mappedCredit);
         }
 
       } catch (err) {

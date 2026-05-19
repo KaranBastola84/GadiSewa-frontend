@@ -25,7 +25,24 @@ function saveData(key, data) {
 export function CustomerProvider({ children }) {
   const [profile, setProfile] = useState(() => loadData("gs_profile", null));
   const [notifications, setNotifications] = useState(() =>
-    loadData("gs_notifications"),
+    loadData("gs_notifications", [
+      {
+        id: "ai-alert-1",
+        title: "AI Failure Prediction Alert",
+        message: "AI analysis predicts a potential wear warning for 'Brake Pads & Rotors' within the next 1,500 km. Preventative maintenance is recommended.",
+        type: "service",
+        read: false,
+        date: new Date(Date.now() - 3600000).toISOString()
+      },
+      {
+        id: "welcome-alert",
+        title: "Welcome to GadiSewa",
+        message: "Your vehicle care journey starts here. Add your vehicles to receive live automated AI maintenance alerts.",
+        type: "general",
+        read: false,
+        date: new Date(Date.now() - 86400000).toISOString()
+      }
+    ]),
   );
   const [totalSpent, setTotalSpent] = useState(0);
 

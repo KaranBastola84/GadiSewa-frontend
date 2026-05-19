@@ -24,7 +24,7 @@ export default function ProfilePage() {
   const [passwordMsg, setPasswordMsg] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
 
-  const customerId = user?.userId;
+  const customerId = user?.customerId;
 
   useEffect(() => {
     if (profile) {
@@ -85,12 +85,38 @@ export default function ProfilePage() {
 
         let combined = [];
         if (histRes.status === "fulfilled") {
-          const data = Array.isArray(histRes.value) ? histRes.value : histRes.value?.result || [];
-          combined = [...combined, ...data];
+          const summary = histRes.value?.result || histRes.value || {};
+          const appointments = summary.recentAppointments || [];
+          const invoices = summary.recentInvoices || [];
+          
+          const serviceData = appointments.map(item => {
+            const linkedInvoice = invoices.find(inv => inv.appointmentId === item.appointmentId);
+            return {
+              id: linkedInvoice?.invoiceId || item.appointmentId,
+              invoiceNo: linkedInvoice?.invoiceNumber || item.appointmentNumber,
+              date: item.completedAt || item.scheduledAt,
+              description: item.problemDescription || "Vehicle Service",
+              vehicle: item.vehicleRegistration,
+              amount: linkedInvoice?.totalAmount || 0,
+              discount: linkedInvoice?.discountAmount || 0,
+              status: linkedInvoice?.status || item.status,
+            };
+          });
+          combined = [...combined, ...serviceData];
         }
         if (invRes.status === "fulfilled") {
-          const data = Array.isArray(invRes.value) ? invRes.value : invRes.value?.result || [];
-          combined = [...combined, ...data];
+          const invoices = Array.isArray(invRes.value) ? invRes.value : invRes.value?.result || [];
+          const invoiceData = invoices.map(item => ({
+            id: item.invoiceId,
+            invoiceNo: item.invoiceNumber,
+            date: item.invoiceDate,
+            description: item.items?.[0]?.description || "Parts Purchase",
+            vehicle: "-",
+            amount: item.totalAmount,
+            discount: item.discountAmount,
+            status: item.status,
+          }));
+          combined = [...combined, ...invoiceData];
         }
 
         const spent = combined

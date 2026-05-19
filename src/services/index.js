@@ -11,3 +11,8 @@ export { default as partRequestsService } from "./partRequestsService";
 export { default as reviewsService } from "./reviewsService";
 export { default as customerService } from "./customerService";
 export { default as staffCustomersService } from "./staffCustomersService";
+export { default as salesInvoicesService } from "./salesInvoicesService";
+export { default as reportsService } from "./reportsService";
+export { default as creditPaymentsService } from "./creditPaymentsService";
+export { default as adminNotificationsService } from "./adminNotificationsService";
+
