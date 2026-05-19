@@ -2,6 +2,9 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResetPassword from "../pages/auth/ResetPassword";
+import VerifyEmail from "../pages/auth/VerifyEmail";
 import Dashboard from "../pages/Dashboard";
 import AdminDashboard from "../pages/admin/Dashboard";
 import PartsPage from "../pages/admin/PartsPage";
@@ -24,6 +27,9 @@ const AppRoutes = () => {
       {/* Public Auth Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
 
       {/* Dashboard - Smart redirect based on role */}
       <Route

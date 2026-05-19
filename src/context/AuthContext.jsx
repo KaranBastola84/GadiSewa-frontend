@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback } from "react";
+import authService from "../services/authService";
 
 const AuthContext = createContext();
 
@@ -45,14 +46,25 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("gadisewa_refresh_token", newRefresh);
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    setToken(null);
-    setRefreshToken(null);
-    localStorage.removeItem("gadisewa_user");
-    localStorage.removeItem("gadisewa_token");
-    localStorage.removeItem("gadisewa_refresh_token");
-  }, []);
+  const logout = useCallback(async () => {
+    const activeRefreshToken =
+      refreshToken || localStorage.getItem("gadisewa_refresh_token");
+
+    try {
+      if (activeRefreshToken) {
+        await authService.logout(activeRefreshToken);
+      }
+    } catch (error) {
+      console.error("Logout Error:", error);
+    } finally {
+      setUser(null);
+      setToken(null);
+      setRefreshToken(null);
+      localStorage.removeItem("gadisewa_user");
+      localStorage.removeItem("gadisewa_token");
+      localStorage.removeItem("gadisewa_refresh_token");
+    }
+  }, [refreshToken]);
 
   const isAuthenticated = !!token && !!user;
 

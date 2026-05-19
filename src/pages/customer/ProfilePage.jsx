@@ -1,36 +1,170 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
 import { useCustomer } from "../../context/CustomerContext";
+import { useAuthContext } from "../../context/AuthContext";
+import authService from "../../services/authService";
 
 export default function ProfilePage() {
   const { profile, updateProfile, totalSpent } = useCustomer();
+  const { token } = useAuthContext();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(() => (profile ? { ...profile } : {}));
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordMsg, setPasswordMsg] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setForm({ ...profile });
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadProfile = async () => {
+      if (!token) return;
+      setLoadingProfile(true);
+      setError("");
+
+      try {
+        const response = await authService.getProfile(token);
+        const profileData = response?.result || response?.profile || null;
+
+        if (!isActive) return;
+
+        if (response?.isSuccess && profileData) {
+          const normalized = normalizeProfile(profileData);
+          updateProfile(normalized);
+          setForm(normalized);
+        } else if (response?.isSuccess === false) {
+          setError(response?.errorMessage?.[0] || "Failed to load profile");
+        }
+      } catch (err) {
+        if (!isActive) return;
+        setError(
+          err?.errorMessage?.[0] || err?.message || "Failed to load profile",
+        );
+      } finally {
+        if (isActive) setLoadingProfile(false);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isActive = false;
+    };
+  }, [token, updateProfile]);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  function handleSave(e) {
+  async function handleSave(e) {
     e.preventDefault();
     setError("");
+    setMsg("");
+
+    if (!token) {
+      setError("Please log in again to update your profile");
+      return;
+    }
+
+    setSavingProfile(true);
     try {
-      updateProfile(form);
-      setEditing(false);
-      setMsg("Profile updated successfully!");
-      setTimeout(() => setMsg(""), 3000);
-    } catch {
-      setError("Failed to update profile");
+      const payload = buildProfilePayload(form);
+      const response = await authService.updateProfile(payload, token);
+
+      if (response?.isSuccess) {
+        const updated = normalizeProfile(response?.result || payload);
+        updateProfile(updated);
+        setForm(updated);
+        setEditing(false);
+        setMsg("Profile updated successfully!");
+        setTimeout(() => setMsg(""), 3000);
+      } else {
+        setError(response?.errorMessage?.[0] || "Failed to update profile");
+      }
+    } catch (err) {
+      setError(
+        err?.errorMessage?.[0] || err?.message || "Failed to update profile",
+      );
+    } finally {
+      setSavingProfile(false);
     }
   }
 
   function handleCancel() {
-    setForm({ ...profile });
+    setForm(profile ? { ...profile } : {});
     setEditing(false);
     setError("");
   }
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordMsg("");
+
+    if (!token) {
+      setPasswordError("Please log in again to change your password");
+      return;
+    }
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+      setPasswordError("All password fields are required");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const response = await authService.changePassword(
+        {
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        },
+        token,
+      );
+
+      if (response?.isSuccess) {
+        setPasswordMsg("Password updated successfully");
+        setPasswordForm({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        setPasswordError(
+          response?.errorMessage?.[0] || "Password change failed",
+        );
+      }
+    } catch (err) {
+      setPasswordError(
+        err?.errorMessage?.[0] || err?.message || "Password change failed",
+      );
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const loyaltyActive = totalSpent >= 5000;
 
@@ -39,6 +173,11 @@ export default function ProfilePage() {
       {msg && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
           {msg}
+        </div>
+      )}
+      {loadingProfile && (
+        <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-500">
+          Loading profile...
         </div>
       )}
       {error && (
@@ -118,29 +257,16 @@ export default function ProfilePage() {
                     onChange={handleChange}
                     editing={editing}
                   />
-                  <Field
-                    label="Address"
-                    name="address"
-                    value={form.address}
-                    onChange={handleChange}
-                    editing={editing}
-                  />
-                  <Field
-                    label="City"
-                    name="city"
-                    value={form.city}
-                    onChange={handleChange}
-                    editing={editing}
-                  />
                 </div>
 
                 {editing && (
                   <div className="flex gap-3 mt-5 pt-4 border-t border-slate-100">
                     <button
                       type="submit"
+                      disabled={savingProfile}
                       className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-semibold transition"
                     >
-                      Save Changes
+                      {savingProfile ? "Saving..." : "Save Changes"}
                     </button>
                     <button
                       type="button"
@@ -151,6 +277,69 @@ export default function ProfilePage() {
                     </button>
                   </div>
                 )}
+              </form>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-6 mt-6">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">
+                Security
+              </h3>
+
+              {passwordMsg && (
+                <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                  {passwordMsg}
+                </div>
+              )}
+              {passwordError && (
+                <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                  {passwordError}
+                </div>
+              )}
+
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    name="currentPassword"
+                    value={passwordForm.currentPassword}
+                    onChange={handlePasswordChange}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 transition text-sm text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={passwordForm.newPassword}
+                    onChange={handlePasswordChange}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 transition text-sm text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={passwordForm.confirmPassword}
+                    onChange={handlePasswordChange}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 transition text-sm text-slate-800"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold transition"
+                >
+                  {passwordLoading ? "Updating..." : "Change Password"}
+                </button>
               </form>
             </div>
           </div>
@@ -183,6 +372,30 @@ export default function ProfilePage() {
       </div>
     </CustomerLayout>
   );
+}
+
+function normalizeProfile(data) {
+  if (!data || typeof data !== "object") return {};
+  const fullName =
+    data.fullName ||
+    [data.firstName, data.lastName].filter(Boolean).join(" ") ||
+    "";
+  const phone = data.phone || data.phoneNumber || "";
+
+  return {
+    ...data,
+    fullName,
+    phone,
+  };
+}
+
+function buildProfilePayload(form) {
+  if (!form || typeof form !== "object") return {};
+  const payload = { ...form };
+  if (form.phone && !form.phoneNumber) {
+    payload.phoneNumber = form.phone;
+  }
+  return payload;
 }
 
 function Field({ label, name, value, onChange, editing, type = "text" }) {

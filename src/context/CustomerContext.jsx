@@ -1,5 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 const CustomerContext = createContext(null);
 
@@ -48,9 +54,9 @@ export function CustomerProvider({ children }) {
     saveData("gs_notifications", notifications);
   }, [notifications]);
 
-  function updateProfile(data) {
+  const updateProfile = useCallback((data) => {
     setProfile(data);
-  }
+  }, []);
 
   function addVehicle(data) {
     const newVehicle = { ...data, id: Date.now() };
