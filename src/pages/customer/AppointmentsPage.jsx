@@ -141,7 +141,6 @@ export default function AppointmentsPage() {
     }
   }
 
-  // apply filter
   const today = new Date(new Date().toDateString());
   const filtered = appointments
     .filter((a) => {
@@ -218,9 +217,9 @@ export default function AppointmentsPage() {
                     ))}
                   </select>
                   {errors.vehicleId && (
-                     <p className="text-xs text-red-500 mt-1">
-                       {errors.vehicleId}
-                     </p>
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.vehicleId}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -321,11 +320,10 @@ export default function AppointmentsPage() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition ${
-              filter === f
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition ${filter === f
                 ? "bg-sky-600 text-white"
                 : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-            }`}
+              }`}
           >
             {f}
           </button>
@@ -370,13 +368,12 @@ export default function AppointmentsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                    apt.status === "Confirmed"
+                  className={`px-2 py-0.5 rounded text-xs font-semibold ${apt.status === "Confirmed"
                       ? "bg-green-50 text-green-700"
                       : apt.status === "Cancelled"
                         ? "bg-red-50 text-red-700"
                         : "bg-amber-50 text-amber-700"
-                  }`}
+                    }`}
                 >
                   {apt.status}
                 </span>

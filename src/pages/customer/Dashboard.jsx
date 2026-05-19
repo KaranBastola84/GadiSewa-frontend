@@ -56,7 +56,6 @@ export default function Dashboard() {
         combinedHistory.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
         setHistory(combinedHistory);
 
-        // Optional: fetch unread notifications if API exists, else keep 0
         setUnreadCount(0);
       } catch (err) {
         console.error("Dashboard fetch error:", err);
@@ -78,21 +77,17 @@ export default function Dashboard() {
     );
   }
 
-  // filter upcoming ones
   const upcomingAppts = appointments.filter(
     (a) => a.status !== "Cancelled" && new Date(a.date) >= new Date(),
   );
 
-  // calculate total spent (paid items)
   const totalSpent = history
     .filter(h => h.status === "Paid")
     .reduce((s, h) => s + (h.amount || 0), 0);
 
-  // pending credit payments
   const creditItems = history.filter((h) => h.status === "Credit" || h.status === "Unpaid");
   const creditTotal = creditItems.reduce((s, h) => s + (h.amount || 0), 0);
 
-  // check loyalty eligibility (spent > 5000)
   const hasLoyalty = totalSpent >= 5000;
 
   return (

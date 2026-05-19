@@ -50,8 +50,7 @@ export const customerService = {
   // Service History
   getHistory: async () => {
     try {
-      // The endpoint doesn't require {id} per prompt (C13: GET /api/customers/history)
-      const response = await apiConfig.get(`/customers/history`);
+      const response = await apiConfig.get("/customers/history");
       return unwrapApiResponse(response, "Failed to fetch service history");
     } catch (error) {
       throw normalizeApiError(error, "Failed to fetch service history");

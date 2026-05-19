@@ -21,7 +21,6 @@ export default function HistoryPage() {
       if (!customerId) return;
       try {
         setLoading(true);
-        // We fetch both service history and sales invoices, then merge them
         const [historyRes, invoicesRes] = await Promise.allSettled([
           customerService.getHistory(),
           customerService.getSalesInvoices()
@@ -45,12 +44,10 @@ export default function HistoryPage() {
           }))];
         }
 
-        // Sort by date descending
         combined.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
         
         setHistory(combined);
         
-        // Calculate total spent (dummy calculation based on paid items, adjust if API provides it)
         const spent = combined.filter(h => h.status === "Paid").reduce((s, h) => s + (h.amount || 0), 0);
         setTotalSpent(spent);
         
@@ -65,7 +62,6 @@ export default function HistoryPage() {
     fetchData();
   }, [customerId]);
 
-  // filter + search
   const filtered = history.filter((item) => {
     const matchFilter =
       filter === "all" ||
