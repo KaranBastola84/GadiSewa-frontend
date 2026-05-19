@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import CustomerLayout from "../../components/CustomerLayout";
 import { useCustomer } from "../../context/CustomerContext";
+import { Star, MapPin, Phone, Clock, ArrowRight, Sparkles } from "lucide-react";
 
 export default function Dashboard() {
   const {
@@ -40,8 +41,8 @@ export default function Dashboard() {
       <div className="relative overflow-hidden rounded-[28px] p-6 sm:p-8 mb-6 text-white shadow-2xl shadow-sky-500/20 bg-linear-to-br from-sky-600 via-sky-700 to-indigo-800 border border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.22),transparent_28%)]" />
         <div className="relative">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold tracking-wide uppercase text-sky-50">
-            Customer overview
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold tracking-wide uppercase text-sky-50 ring-1 ring-white/20">
+            <Sparkles size={14} className="text-sky-200" /> Customer overview
           </div>
           <h1 className="mt-4 text-2xl sm:text-3xl font-bold">
             Welcome, {profile?.fullName || "Customer"}!
@@ -52,7 +53,7 @@ export default function Dashboard() {
           </p>
           {hasLoyalty && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm backdrop-blur-sm">
-              <span>⭐</span> Loyalty Member - 10% off on purchases over Rs.
+              <Star size={16} className="text-yellow-400 fill-yellow-400" /> Loyalty Member - 10% off on purchases over Rs.
               5,000
             </div>
           )}
@@ -119,7 +120,7 @@ export default function Dashboard() {
                 to="/customer/appointments"
                 className="text-sm text-sky-600 hover:text-sky-700"
               >
-                View all →
+                View all <ArrowRight size={14} className="inline ml-1" />
               </Link>
             </div>
             {upcomingAppts.length === 0 ? (
@@ -155,11 +156,10 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                        apt.status === "Confirmed"
-                          ? "bg-green-50 text-green-700"
-                          : "bg-amber-50 text-amber-700"
-                      }`}
+                      className={`px-2 py-0.5 rounded text-xs font-semibold ${apt.status === "Confirmed"
+                        ? "bg-green-50 text-green-700"
+                        : "bg-amber-50 text-amber-700"
+                        }`}
                     >
                       {apt.status}
                     </span>
@@ -181,7 +181,7 @@ export default function Dashboard() {
                 to="/customer/history"
                 className="text-xs text-red-700 font-semibold mt-2 inline-block"
               >
-                View details →
+                View details <ArrowRight size={14} className="inline ml-1" />
               </Link>
             </div>
           )}
@@ -193,7 +193,7 @@ export default function Dashboard() {
                 to="/customer/history"
                 className="text-sm text-sky-600 hover:text-sky-700"
               >
-                View all →
+                View all <ArrowRight size={14} className="inline ml-1" />
               </Link>
             </div>
             {history.length === 0 ? (
@@ -236,9 +236,9 @@ export default function Dashboard() {
               servicing, fair pricing.
             </p>
             <div className="mt-3 space-y-1.5 text-xs text-slate-400">
-              <p>📍 Kathmandu, Nepal</p>
-              <p>📞 +977-1-4567890</p>
-              <p>🕐 Sun - Fri: 8 AM - 6 PM</p>
+              <p className="flex items-center gap-2"><MapPin size={14} /> Kathmandu, Nepal</p>
+              <p className="flex items-center gap-2"><Phone size={14} /> +977-1-4567890</p>
+              <p className="flex items-center gap-2"><Clock size={14} /> Sun - Fri: 8 AM - 6 PM</p>
             </div>
           </div>
         </div>
@@ -274,9 +274,7 @@ function ActionLink({ to, label, desc }) {
         <p className="text-sm font-semibold text-slate-900">{label}</p>
         <p className="text-xs text-slate-500">{desc}</p>
       </div>
-      <span className="text-slate-300 group-hover:text-sky-500 transition">
-        →
-      </span>
+      <ArrowRight size={18} className="text-slate-300 group-hover:text-sky-500 group-hover:translate-x-1 transition-all duration-200" />
     </Link>
   );
 }

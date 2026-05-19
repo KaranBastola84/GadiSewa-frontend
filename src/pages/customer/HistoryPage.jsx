@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
 import { useCustomer } from "../../context/CustomerContext";
+import { Star } from "lucide-react";
 
 export default function HistoryPage() {
   const { history, totalSpent } = useCustomer();
@@ -58,7 +59,7 @@ export default function HistoryPage() {
 
       {totalSpent >= 5000 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-sm text-amber-800">
-          ⭐ <strong>Loyalty Active!</strong> You get 10% off once your total
+          <Star size={16} className="inline mr-1 text-amber-500 fill-amber-500" /> <strong>Loyalty Active!</strong> You get 10% off once your total
           spending reaches Rs. 5,000.
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
 import { useCustomer } from "../../context/CustomerContext";
+import { Edit2, Trash2 } from "lucide-react";
 
 const emptyVehicle = {
   make: "", model: "", year: "", plateNumber: "",
@@ -151,8 +152,8 @@ export default function VehiclesPage() {
               <div className="flex justify-between items-start mb-3">
                 <h4 className="font-bold text-slate-800">{v.make} {v.model}</h4>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                  <button onClick={() => startEdit(v)} className="p-1 text-slate-400 hover:text-sky-600" title="Edit">✏️</button>
-                  <button onClick={() => setDeleteConfirm(v.id)} className="p-1 text-slate-400 hover:text-red-600" title="Delete">🗑️</button>
+                  <button onClick={() => startEdit(v)} className="p-1 text-slate-400 hover:text-sky-600" title="Edit"><Edit2 size={16} /></button>
+                  <button onClick={() => setDeleteConfirm(v.id)} className="p-1 text-slate-400 hover:text-red-600" title="Delete"><Trash2 size={16} /></button>
                 </div>
               </div>
               <p className="text-sm text-slate-500 mb-2">{v.year} • {v.color || "N/A"}</p>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
 import { useCustomer } from "../../context/CustomerContext";
+import { Star } from "lucide-react";
 
 const serviceOptions = [
   "Oil Change", "Brake Pad Replacement", "Engine Tune-Up",
@@ -73,7 +74,7 @@ export default function ReviewsPage() {
             const pct = reviews.length ? (count / reviews.length) * 100 : 0;
             return (
               <div key={star} className="flex items-center gap-2 text-sm">
-                <span className="w-4 text-slate-500">{star}★</span>
+                <span className="w-8 flex justify-end items-center gap-0.5 text-slate-500">{star}<Star size={12} className="fill-slate-500" /></span>
                 <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} />
                 </div>
@@ -105,7 +106,7 @@ export default function ReviewsPage() {
                   {[1, 2, 3, 4, 5].map((s) => (
                     <button key={s} type="button" onClick={() => setForm({ ...form, rating: s })}
                       className="text-2xl hover:scale-110 transition">
-                      {s <= form.rating ? "⭐" : "☆"}
+                      {s <= form.rating ? <Star size={24} className="text-yellow-400 fill-yellow-400" /> : <Star size={24} className="text-slate-300" />}
                     </button>
                   ))}
                 </div>
