@@ -10,6 +10,9 @@ import AdminDashboard from "../pages/admin/Dashboard";
 import PartsPage from "../pages/admin/PartsPage";
 import VendorsPage from "../pages/admin/VendorsPage";
 import UsersPage from "../pages/admin/UsersPage";
+import PurchaseInvoicesPage from "../pages/admin/PurchaseInvoicesPage";
+import FinancialReportsPage from "../pages/admin/FinancialReportsPage";
+import InventoryReportsPage from "../pages/admin/InventoryReportsPage";
 import CustomerDashboard from "../pages/customer/Dashboard";
 import ProfilePage from "../pages/customer/ProfilePage";
 import VehiclesPage from "../pages/customer/VehiclesPage";
@@ -71,6 +74,30 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
             <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/purchase-invoices"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
+            <PurchaseInvoicesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/reports/financial"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
+            <FinancialReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/reports/inventory"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
+            <InventoryReportsPage />
           </ProtectedRoute>
         }
       />

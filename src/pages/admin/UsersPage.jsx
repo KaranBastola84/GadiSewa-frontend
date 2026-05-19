@@ -1,365 +1,435 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
-import { USER_ROLES } from "../../context/AuthContext";
-import { adminUsersService } from "../../services/adminUsersService";
+import { adminUsersService } from "../../services";
+import { adminStaffService } from "../../services";
+import { USER_ROLES } from "../../constants";
 
 const roleLabels = {
-  [USER_ROLES.ADMIN]: "Admin",
-  [USER_ROLES.STAFF]: "Staff",
-  [USER_ROLES.CUSTOMER]: "Customer",
-};
-
-const initialForm = {
-  roleType: "staff",
-  firstName: "",
-  lastName: "",
-  email: "",
-  password: "",
-  phoneNumber: "",
-  employeeCode: "",
-  position: "",
-  hireDate: "",
+  Admin: "Admin",
+  Staff: "Staff",
+  Customer: "Customer",
+  1: "Admin",
+  2: "Staff",
+  3: "Customer",
 };
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [form, setForm] = useState(initialForm);
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("users");
 
+  // Detail modal
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // Staff modal
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [staffForm, setStaffForm] = useState({
+    firstName: "",
+    lastName: "",
+    phoneNumber: "",
+    position: "",
+    hireDate: "",
+    isAvailable: true,
+  });
+  const [staffError, setStaffError] = useState("");
+  const [staffSaving, setStaffSaving] = useState(false);
+
+  // Load users
   const loadUsers = async () => {
     setLoading(true);
-    setError("");
     try {
-      const response = await adminUsersService.getUsers();
-      setUsers(response?.result || []);
-    } catch (loadError) {
-      setError(loadError.message || "Failed to load users.");
+      const response = await adminUsersService.getAllUsers();
+      setUsers(response.data || []);
+    } catch (error) {
+      console.error("Error loading users:", error);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const stats = useMemo(
-    () => ({
-      adminCount: users.filter((user) => user.role === USER_ROLES.ADMIN).length,
-      staffCount: users.filter((user) => user.role === USER_ROLES.STAFF).length,
-      customerCount: users.filter((user) => user.role === USER_ROLES.CUSTOMER)
-        .length,
-    }),
-    [users],
-  );
-
-  const handleFormChange = (event) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const resetForm = () => setForm(initialForm);
-
-  const handleCreateUser = async (event) => {
-    event.preventDefault();
-    setSaving(true);
-    setError("");
-
-    const basePayload = {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      email: form.email.trim(),
-      password: form.password,
-      phoneNumber: form.phoneNumber.trim(),
-    };
-
+  // Load staff
+  const loadStaff = async () => {
+    setStaffLoading(true);
     try {
-      if (form.roleType === "admin") {
-        await adminUsersService.createAdminAccount(basePayload);
-      } else {
-        await adminUsersService.createStaffAccount({
-          ...basePayload,
-          employeeCode: form.employeeCode.trim(),
-          position: form.position.trim(),
-          hireDate: form.hireDate,
-        });
-      }
-
-      resetForm();
-      await loadUsers();
-    } catch (createError) {
-      setError(createError.message || "Failed to create account.");
+      const response = await adminStaffService.getAllStaff();
+      setStaff(response.data || []);
+    } catch (error) {
+      console.error("Error loading staff:", error);
+      setStaff([]);
     } finally {
-      setSaving(false);
+      setStaffLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadUsers();
+    loadStaff();
+  }, []);
+
+  // Handle user detail view
   const openUserDetails = async (userId) => {
     setDetailLoading(true);
-    setSelectedUser(null);
     setShowDetailModal(true);
-    setError("");
-
     try {
       const response = await adminUsersService.getUserById(userId);
-      setSelectedUser(response?.result || null);
-    } catch (detailError) {
-      setError(detailError.message || "Failed to load user details.");
-      setShowDetailModal(false);
+      setSelectedUser(response.data);
+    } catch (error) {
+      console.error("Error loading user details:", error);
+      setSelectedUser(null);
     } finally {
       setDetailLoading(false);
     }
   };
 
+  // Toggle user status
   const toggleStatus = async (user) => {
     try {
-      await adminUsersService.updateUserStatus(user.userId, {
-        isActive: !user.isActive,
-      });
-      await loadUsers();
-    } catch (updateError) {
-      setError(updateError.message || "Failed to update user status.");
+      const newStatus = !user.isActive;
+      await adminUsersService.updateUserStatus(user.userId, newStatus);
+      loadUsers();
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+    }
+  };
+
+  // Open staff edit modal
+  const openStaffEdit = (staffMember) => {
+    setSelectedStaff(staffMember);
+    const { firstName, lastName } = splitFullName(staffMember.fullName || "");
+    setStaffForm({
+      firstName,
+      lastName,
+      phoneNumber: staffMember.phoneNumber || "",
+      position: staffMember.position || "",
+      hireDate: normalizeDateInput(staffMember.hireDate || ""),
+      isAvailable: staffMember.isAvailable ?? true,
+    });
+    setStaffError("");
+    setShowStaffModal(true);
+  };
+
+  // Handle staff form change
+  const handleStaffFormChange = (event) => {
+    const { name, value } = event.target;
+    setStaffForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle staff update
+  const handleStaffUpdate = async (event) => {
+    event.preventDefault();
+    setStaffError("");
+    setStaffSaving(true);
+
+    try {
+      const payload = {
+        firstName: staffForm.firstName.trim(),
+        lastName: staffForm.lastName.trim(),
+        phoneNumber: staffForm.phoneNumber.trim(),
+        position: staffForm.position.trim(),
+        hireDate: staffForm.hireDate,
+        isAvailable: staffForm.isAvailable,
+      };
+
+      await adminStaffService.updateStaff(selectedStaff.staffId, payload);
+      setShowStaffModal(false);
+      loadStaff();
+    } catch (error) {
+      console.error("Error updating staff:", error);
+      setStaffError(
+        error.response?.data?.message || "Failed to update staff member",
+      );
+    } finally {
+      setStaffSaving(false);
+    }
+  };
+
+  // Handle staff delete
+  const handleStaffDelete = async (staffId) => {
+    if (!confirm("Are you sure you want to delete this staff member?")) {
+      return;
+    }
+
+    try {
+      await adminStaffService.deleteStaff(staffId);
+      loadStaff();
+    } catch (error) {
+      console.error("Error deleting staff:", error);
+      alert("Failed to delete staff member");
     }
   };
 
   return (
-    <AdminLayout
-      pageTitle="Users"
-      subtitle="Create staff and admin accounts, then manage access state"
-    >
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-slate-950">Create account</h2>
-            <p className="text-sm text-slate-500">
-              Use the correct endpoint for staff or admin account creation.
-            </p>
-          </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-black text-slate-950">Users & Staff</h1>
+          <p className="mt-1 text-slate-600">
+            Manage customer and staff accounts across the platform.
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 border-b border-slate-200">
           <button
             type="button"
-            onClick={resetForm}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            onClick={() => setActiveTab("users")}
+            className={`px-4 py-3 text-sm font-semibold transition ${
+              activeTab === "users"
+                ? "border-b-2 border-slate-950 text-slate-950"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
-            Reset
+            Users ({users.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("staff")}
+            className={`px-4 py-3 text-sm font-semibold transition ${
+              activeTab === "staff"
+                ? "border-b-2 border-slate-950 text-slate-950"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            Staff ({staff.length})
           </button>
         </div>
 
-        {error && (
-          <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
+        {/* Users Tab */}
+        {activeTab === "users" && (
+          <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-950">
+                  User directory
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Monitor roles, login activity, and account state.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={loadUsers}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="py-20 text-center text-sm text-slate-500">
+                Loading users...
+              </div>
+            ) : (
+              <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <Th>Name</Th>
+                        <Th>Email</Th>
+                        <Th>Phone</Th>
+                        <Th>Role</Th>
+                        <Th>Status</Th>
+                        <Th>Last login</Th>
+                        <Th className="text-right">Action</Th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {users.map((user) => (
+                        <tr key={user.userId}>
+                          <Td>
+                            <div>
+                              <p className="font-semibold text-slate-950">
+                                {user.fullName}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {user.userId}
+                              </p>
+                            </div>
+                          </Td>
+                          <Td>{user.email}</Td>
+                          <Td>{user.phoneNumber}</Td>
+                          <Td>
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                              {roleLabels[user.role] || user.role}
+                            </span>
+                          </Td>
+                          <Td>
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                user.isActive
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-red-50 text-red-700"
+                              }`}
+                            >
+                              {user.isActive ? "Active" : "Inactive"}
+                            </span>
+                          </Td>
+                          <Td>
+                            {user.lastLoginAt
+                              ? new Date(user.lastLoginAt).toLocaleString()
+                              : "Never"}
+                          </Td>
+                          <Td className="text-right">
+                            <div className="inline-flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openUserDetails(user.userId)}
+                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                View
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleStatus(user)}
+                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Toggle status
+                              </button>
+                            </div>
+                          </Td>
+                        </tr>
+                      ))}
+                      {users.length === 0 && (
+                        <tr>
+                          <Td
+                            colSpan={7}
+                            className="py-12 text-center text-sm text-slate-500"
+                          >
+                            No users available yet.
+                          </Td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </section>
         )}
 
-        <form className="mt-5 space-y-4" onSubmit={handleCreateUser}>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <Field
-              label="Role type"
-              name="roleType"
-              value={form.roleType}
-              onChange={handleFormChange}
-              asSelect
-            >
-              <option value="staff">Staff account</option>
-              <option value="admin">Admin account</option>
-            </Field>
-            <Field
-              label="First name"
-              name="firstName"
-              value={form.firstName}
-              onChange={handleFormChange}
-              required
-            />
-            <Field
-              label="Last name"
-              name="lastName"
-              value={form.lastName}
-              onChange={handleFormChange}
-              required
-            />
-            <Field
-              label="Email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleFormChange}
-              required
-            />
-            <Field
-              label="Password"
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleFormChange}
-              required
-            />
-            <Field
-              label="Phone number"
-              name="phoneNumber"
-              value={form.phoneNumber}
-              onChange={handleFormChange}
-              required
-            />
-          </div>
-
-          {form.roleType === "staff" && (
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field
-                label="Employee code"
-                name="employeeCode"
-                value={form.employeeCode}
-                onChange={handleFormChange}
-                required
-              />
-              <Field
-                label="Position"
-                name="position"
-                value={form.position}
-                onChange={handleFormChange}
-                required
-              />
-              <Field
-                label="Hire date"
-                name="hireDate"
-                type="date"
-                value={form.hireDate}
-                onChange={handleFormChange}
-                required
-              />
+        {/* Staff Tab */}
+        {activeTab === "staff" && (
+          <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-950">
+                  Staff directory
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Manage staff members and their assignments.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={loadStaff}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Refresh
+              </button>
             </div>
-          )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-            >
-              {saving
-                ? "Creating..."
-                : form.roleType === "admin"
-                  ? "Create admin"
-                  : "Create staff"}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <StatCard label="Admins" value={stats.adminCount} />
-        <StatCard label="Staff" value={stats.staffCount} />
-        <StatCard label="Customers" value={stats.customerCount} />
+            {staffLoading ? (
+              <div className="py-20 text-center text-sm text-slate-500">
+                Loading staff...
+              </div>
+            ) : (
+              <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <Th>Name</Th>
+                        <Th>Position</Th>
+                        <Th>Phone</Th>
+                        <Th>Hire Date</Th>
+                        <Th>Status</Th>
+                        <Th className="text-right">Action</Th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {staff.map((member) => (
+                        <tr key={member.staffId}>
+                          <Td>
+                            <div>
+                              <p className="font-semibold text-slate-950">
+                                {member.fullName}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {member.staffId}
+                              </p>
+                            </div>
+                          </Td>
+                          <Td>{member.position}</Td>
+                          <Td>{member.phoneNumber}</Td>
+                          <Td>
+                            {member.hireDate
+                              ? new Date(member.hireDate).toLocaleDateString()
+                              : "-"}
+                          </Td>
+                          <Td>
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                member.isAvailable
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-amber-50 text-amber-700"
+                              }`}
+                            >
+                              {member.isAvailable ? "Available" : "Unavailable"}
+                            </span>
+                          </Td>
+                          <Td className="text-right">
+                            <div className="inline-flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openStaffEdit(member)}
+                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleStaffDelete(member.staffId)
+                                }
+                                className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </Td>
+                        </tr>
+                      ))}
+                      {staff.length === 0 && (
+                        <tr>
+                          <Td
+                            colSpan={6}
+                            className="py-12 text-center text-sm text-slate-500"
+                          >
+                            No staff members available yet.
+                          </Td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
-      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-slate-950">User directory</h2>
-            <p className="text-sm text-slate-500">
-              Monitor roles, login activity, and account state.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={loadUsers}
-            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            Refresh
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="py-20 text-center text-sm text-slate-500">
-            Loading users...
-          </div>
-        ) : (
-          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <Th>Name</Th>
-                    <Th>Email</Th>
-                    <Th>Phone</Th>
-                    <Th>Role</Th>
-                    <Th>Status</Th>
-                    <Th>Last login</Th>
-                    <Th className="text-right">Action</Th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {users.map((user) => (
-                    <tr key={user.userId}>
-                      <Td>
-                        <div>
-                          <p className="font-semibold text-slate-950">
-                            {user.fullName}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {user.userId}
-                          </p>
-                        </div>
-                      </Td>
-                      <Td>{user.email}</Td>
-                      <Td>{user.phoneNumber}</Td>
-                      <Td>
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                          {roleLabels[user.role] || user.role}
-                        </span>
-                      </Td>
-                      <Td>
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${user.isActive ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}
-                        >
-                          {user.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </Td>
-                      <Td>
-                        {user.lastLoginAt
-                          ? new Date(user.lastLoginAt).toLocaleString()
-                          : "Never"}
-                      </Td>
-                      <Td className="text-right">
-                        <div className="inline-flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openUserDetails(user.userId)}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            View
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleStatus(user)}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            Toggle status
-                          </button>
-                        </div>
-                      </Td>
-                    </tr>
-                  ))}
-                  {users.length === 0 && (
-                    <tr>
-                      <Td
-                        colSpan={7}
-                        className="py-12 text-center text-sm text-slate-500"
-                      >
-                        No users available yet.
-                      </Td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </section>
-
+      {/* User Detail Modal */}
       {showDetailModal && (
         <Modal title="User details" onClose={() => setShowDetailModal(false)}>
           {detailLoading ? (
@@ -396,8 +466,107 @@ export default function UsersPage() {
           )}
         </Modal>
       )}
+
+      {/* Staff Edit Modal */}
+      {showStaffModal && (
+        <Modal title="Edit staff" onClose={() => setShowStaffModal(false)}>
+          <form className="space-y-4" onSubmit={handleStaffUpdate}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field
+                label="First name"
+                name="firstName"
+                value={staffForm.firstName}
+                onChange={handleStaffFormChange}
+                required
+              />
+              <Field
+                label="Last name"
+                name="lastName"
+                value={staffForm.lastName}
+                onChange={handleStaffFormChange}
+                required
+              />
+              <Field
+                label="Phone"
+                name="phoneNumber"
+                value={staffForm.phoneNumber}
+                onChange={handleStaffFormChange}
+              />
+              <Field
+                label="Position"
+                name="position"
+                value={staffForm.position}
+                onChange={handleStaffFormChange}
+                required
+              />
+              <Field
+                label="Hire date"
+                name="hireDate"
+                type="date"
+                value={staffForm.hireDate}
+                onChange={handleStaffFormChange}
+                required
+              />
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  name="isAvailable"
+                  checked={staffForm.isAvailable}
+                  onChange={(event) =>
+                    setStaffForm((prev) => ({
+                      ...prev,
+                      isAvailable: event.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                Available for assignments
+              </label>
+            </div>
+
+            {staffError && (
+              <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                {staffError}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={staffSaving}
+                className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+              >
+                {staffSaving ? "Saving..." : "Save changes"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowStaffModal(false)}
+                className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </AdminLayout>
   );
+}
+
+function splitFullName(fullName) {
+  if (!fullName) return { firstName: "", lastName: "" };
+  const parts = fullName.trim().split(" ");
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+function normalizeDateInput(value) {
+  if (!value) return "";
+  if (value.length >= 10) return value.slice(0, 10);
+  return value;
 }
 
 function StatCard({ label, value }) {

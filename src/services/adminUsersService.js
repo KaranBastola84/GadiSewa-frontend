@@ -51,6 +51,15 @@ export const adminUsersService = {
       throw normalizeApiError(error, "Failed to update user status");
     }
   },
+
+  updateUserRole: async (id, roleData) => {
+    try {
+      const response = await apiConfig.put(`${basePath}/${id}/role`, roleData);
+      return unwrapApiResponse(response, "Failed to update user role");
+    } catch (error) {
+      throw normalizeApiError(error, "Failed to update user role");
+    }
+  },
 };
 
 export default adminUsersService;
