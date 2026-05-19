@@ -1,12 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useCustomer } from "../../context/CustomerContext";
+import { useAuthContext } from "../../context/AuthContext";
+import customerService from "../../services/customerService";
 import { Star } from "lucide-react";
 
 export default function HistoryPage() {
-  const { history, totalSpent } = useCustomer();
+  const { user } = useAuthContext();
+  const customerId = user?.userId;
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [totalSpent, setTotalSpent] = useState(0);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!customerId) return;
+      try {
+        setLoading(true);
+        const [historyRes, invoicesRes] = await Promise.allSettled([
+          customerService.getHistory(),
+          customerService.getSalesInvoices(),
+        ]);
+
+        let combined = [];
+
+        if (historyRes.status === "fulfilled") {
+          const serviceData = Array.isArray(historyRes.value) ? historyRes.value : historyRes.value?.result || [];
+          combined = [...combined, ...serviceData.map(item => ({ ...item, type: "Service" }))];
+        }
+        if (invoicesRes.status === "fulfilled") {
+          const invoiceData = Array.isArray(invoicesRes.value) ? invoicesRes.value : invoicesRes.value?.result || [];
+          combined = [...combined, ...invoiceData.map(item => ({ ...item, type: "Purchase" }))];
+        }
+
+        combined.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        setHistory(combined);
+
+        const spent = combined.filter(h => h.status === "Paid").reduce((s, h) => s + (h.amount || 0), 0);
+        setTotalSpent(spent);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load history data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [customerId]);
 
   // filter + search
   const filtered = history.filter((item) => {
@@ -27,14 +69,19 @@ export default function HistoryPage() {
 
   const paidTotal = history
     .filter((h) => h.status === "Paid")
-    .reduce((s, h) => s + h.amount, 0);
+    .reduce((s, h) => s + (h.amount || 0), 0);
   const creditTotal = history
-    .filter((h) => h.status === "Credit")
-    .reduce((s, h) => s + h.amount, 0);
+    .filter((h) => h.status === "Credit" || h.status === "Unpaid")
+    .reduce((s, h) => s + (h.amount || 0), 0);
   const discountSaved = history.reduce((s, h) => s + (h.discount || 0), 0);
 
   return (
     <CustomerLayout pageTitle="Purchase & Service History">
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {error}
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <SummaryCard
           label="Total Spent"
@@ -89,7 +136,11 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
+          <p className="text-slate-400">Loading history...</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
           <p className="text-slate-400">No records found.</p>
         </div>

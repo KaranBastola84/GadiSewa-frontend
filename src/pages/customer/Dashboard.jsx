@@ -1,18 +1,68 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useCustomer } from "../../context/CustomerContext";
+import { useAuthContext } from "../../context/AuthContext";
+import customerService from "../../services/customerService";
+import appointmentsService from "../../services/appointmentsService";
+import authService from "../../services/authService";
 import { Star, MapPin, Phone, Clock, ArrowRight, Sparkles } from "lucide-react";
 
 export default function Dashboard() {
-  const {
-    profile,
-    vehicles,
-    appointments,
-    history,
-    unreadCount,
-    totalSpent,
-    loading,
-  } = useCustomer();
+  const { user, token } = useAuthContext();
+  const customerId = user?.userId;
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [totalSpent, setTotalSpent] = useState(0);
+  const [unreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!customerId || !token) return;
+      try {
+        setLoading(true);
+        const [profRes, vehRes, aptRes, histRes, invRes] = await Promise.allSettled([
+          authService.getProfile(token),
+          customerService.getVehicles(customerId),
+          appointmentsService.getAppointments(),
+          customerService.getHistory(),
+          customerService.getSalesInvoices(),
+        ]);
+
+        if (profRes.status === "fulfilled") {
+          setProfile(profRes.value?.result || profRes.value || null);
+        }
+        if (vehRes.status === "fulfilled") {
+          setVehicles(Array.isArray(vehRes.value) ? vehRes.value : vehRes.value?.result || []);
+        }
+        if (aptRes.status === "fulfilled") {
+          setAppointments(Array.isArray(aptRes.value) ? aptRes.value : aptRes.value?.result || []);
+        }
+
+        let combined = [];
+        if (histRes.status === "fulfilled") {
+          const svc = Array.isArray(histRes.value) ? histRes.value : histRes.value?.result || [];
+          combined = [...combined, ...svc.map(i => ({ ...i, type: "Service" }))];
+        }
+        if (invRes.status === "fulfilled") {
+          const inv = Array.isArray(invRes.value) ? invRes.value : invRes.value?.result || [];
+          combined = [...combined, ...inv.map(i => ({ ...i, type: "Purchase" }))];
+        }
+        combined.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        setHistory(combined);
+
+        const spent = combined.filter(h => h.status === "Paid").reduce((s, h) => s + (h.amount || 0), 0);
+        setTotalSpent(spent);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [customerId, token]);
 
   if (loading) {
     return (
@@ -30,10 +80,10 @@ export default function Dashboard() {
   );
 
   // pending credit payments
-  const creditItems = history.filter((h) => h.status === "Credit");
-  const creditTotal = creditItems.reduce((s, h) => s + h.amount, 0);
+  const creditItems = history.filter((h) => h.status === "Credit" || h.status === "Unpaid");
+  const creditTotal = creditItems.reduce((s, h) => s + (h.amount || 0), 0);
 
-  // check loyalty eligibility (spent > 5000 in single purchase)
+  // check loyalty eligibility
   const hasLoyalty = totalSpent >= 5000;
 
   return (

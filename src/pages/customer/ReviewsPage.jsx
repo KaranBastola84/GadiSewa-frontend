@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useCustomer } from "../../context/CustomerContext";
+import reviewsService from "../../services/reviewsService";
 import { Star } from "lucide-react";
 
 const serviceOptions = [
@@ -10,11 +10,28 @@ const serviceOptions = [
 ];
 
 export default function ReviewsPage() {
-  const { reviews, submitReview } = useCustomer();
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [msg, setMsg] = useState("");
   const [form, setForm] = useState({ serviceType: "", rating: 0, comment: "" });
   const [errors, setErrors] = useState({});
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      const data = await reviewsService.getReviews();
+      setReviews(Array.isArray(data) ? data : data?.result || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -33,13 +50,14 @@ export default function ReviewsPage() {
     e.preventDefault();
     if (!validate()) return;
     try {
-      await submitReview(form);
+      await reviewsService.createReview(form);
       setForm({ serviceType: "", rating: 0, comment: "" });
       setShowForm(false);
       setMsg("Review submitted! Thanks for the feedback.");
+      fetchReviews();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
-      setErrors({ submit: err.message });
+      setErrors({ submit: err.message || "Failed to submit review" });
     }
   }
 
@@ -129,7 +147,11 @@ export default function ReviewsPage() {
         </div>
       )}
 
-      {reviews.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
+          <p className="text-slate-400">Loading reviews...</p>
+        </div>
+      ) : reviews.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
           <p className="text-slate-400">No reviews yet.</p>
         </div>

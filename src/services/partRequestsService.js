@@ -31,6 +31,18 @@ export const partRequestsService = {
     }
   },
 
+  createCustomerRequest: async (requestData) => {
+    try {
+      const response = await apiConfig.post(
+        `${basePath}/customer`,
+        requestData,
+      );
+      return unwrapApiResponse(response, "Failed to submit part request");
+    } catch (error) {
+      throw normalizeApiError(error, "Failed to submit part request");
+    }
+  },
+
   updateRequest: async (id, requestData) => {
     try {
       const response = await apiConfig.put(`${basePath}/${id}`, requestData);

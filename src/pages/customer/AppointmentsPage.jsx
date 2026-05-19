@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useCustomer } from "../../context/CustomerContext";
+import { useAuthContext } from "../../context/AuthContext";
+import appointmentsService from "../../services/appointmentsService";
+import customerService from "../../services/customerService";
 
 const serviceTypes = [
   "Oil Change",
@@ -31,8 +33,11 @@ const timeSlots = [
 ];
 
 export default function AppointmentsPage() {
-  const { vehicles, appointments, bookAppointment, cancelAppointment } =
-    useCustomer();
+  const { user } = useAuthContext();
+  const customerId = user?.userId;
+  const [vehicles, setVehicles] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState("all");
   const [msg, setMsg] = useState("");
@@ -44,6 +49,32 @@ export default function AppointmentsPage() {
     notes: "",
   });
   const [errors, setErrors] = useState({});
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [aptRes, vehRes] = await Promise.allSettled([
+        appointmentsService.getAppointments(),
+        customerId ? customerService.getVehicles(customerId) : Promise.resolve([]),
+      ]);
+      if (aptRes.status === "fulfilled") {
+        const list = Array.isArray(aptRes.value) ? aptRes.value : aptRes.value?.result || [];
+        setAppointments(list);
+      }
+      if (vehRes.status === "fulfilled") {
+        const list = Array.isArray(vehRes.value) ? vehRes.value : vehRes.value?.result || [];
+        setVehicles(list);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [customerId]);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -76,7 +107,7 @@ export default function AppointmentsPage() {
         ? `${vehicle.make} ${vehicle.model} (${vehicle.plateNumber})`
         : "";
 
-      await bookAppointment({
+      await appointmentsService.createAppointment({
         vehicleId: parseInt(form.vehicleId),
         vehicleName,
         serviceType: form.serviceType,
@@ -94,16 +125,18 @@ export default function AppointmentsPage() {
         notes: "",
       });
       setShowForm(false);
+      fetchData();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
-      setErrors({ submit: err.message });
+      setErrors({ submit: err.message || "Failed to book appointment" });
     }
   }
 
   async function handleCancel(id) {
     try {
-      await cancelAppointment(id);
+      await appointmentsService.deleteAppointment(id);
       setMsg("Appointment cancelled.");
+      fetchData();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
       console.error(err);

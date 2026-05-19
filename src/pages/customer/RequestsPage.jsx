@@ -1,13 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useCustomer } from "../../context/CustomerContext";
+import { useAuthContext } from "../../context/AuthContext";
+import partRequestsService from "../../services/partRequestsService";
+import customerService from "../../services/customerService";
 
 export default function RequestsPage() {
-  const { requests, submitRequest, vehicles } = useCustomer();
+  const { user } = useAuthContext();
+  const customerId = user?.userId;
+  const [requests, setRequests] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [msg, setMsg] = useState("");
   const [form, setForm] = useState({ partName: "", brand: "", vehicleModel: "", urgency: "Medium", notes: "" });
   const [errors, setErrors] = useState({});
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [reqRes, vehRes] = await Promise.allSettled([
+        partRequestsService.getRequests(),
+        customerId ? customerService.getVehicles(customerId) : Promise.resolve([]),
+      ]);
+      if (reqRes.status === "fulfilled") {
+        setRequests(Array.isArray(reqRes.value) ? reqRes.value : reqRes.value?.result || []);
+      }
+      if (vehRes.status === "fulfilled") {
+        setVehicles(Array.isArray(vehRes.value) ? vehRes.value : vehRes.value?.result || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [customerId]);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,13 +56,14 @@ export default function RequestsPage() {
     e.preventDefault();
     if (!validate()) return;
     try {
-      await submitRequest(form);
+      await partRequestsService.createCustomerRequest(form);
       setForm({ partName: "", brand: "", vehicleModel: "", urgency: "Medium", notes: "" });
       setShowForm(false);
       setMsg("Request submitted!");
+      fetchData();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
-      setErrors({ submit: err.message });
+      setErrors({ submit: err.message || "Failed to submit request" });
     }
   }
 
@@ -123,7 +154,11 @@ export default function RequestsPage() {
         </div>
       )}
 
-      {requests.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
+          <p className="text-slate-400">Loading requests...</p>
+        </div>
+      ) : requests.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
           <p className="text-slate-400">No part requests yet.</p>
         </div>

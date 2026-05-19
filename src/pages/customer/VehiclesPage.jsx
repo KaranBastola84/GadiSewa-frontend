@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useCustomer } from "../../context/CustomerContext";
+import { useAuthContext } from "../../context/AuthContext";
+import customerService from "../../services/customerService";
 import { Edit2, Trash2 } from "lucide-react";
 
 const emptyVehicle = {
@@ -9,13 +10,35 @@ const emptyVehicle = {
 };
 
 export default function VehiclesPage() {
-  const { vehicles, addVehicle, updateVehicle, deleteVehicle } = useCustomer();
+  const { user } = useAuthContext();
+  const customerId = user?.userId;
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ ...emptyVehicle });
   const [errors, setErrors] = useState({});
   const [msg, setMsg] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const fetchVehicles = async () => {
+    if (!customerId) return;
+    try {
+      setLoading(true);
+      const data = await customerService.getVehicles(customerId);
+      const list = Array.isArray(data) ? data : data?.result || [];
+      setVehicles(list);
+    } catch (err) {
+      console.error(err);
+      setErrors({ fetch: err.message || "Failed to load vehicles" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicles();
+  }, [customerId]);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -46,17 +69,18 @@ export default function VehiclesPage() {
       };
 
       if (editId) {
-        await updateVehicle(editId, payload);
+        await customerService.updateVehicle(customerId, editId, payload);
         setMsg("Vehicle updated!");
       } else {
-        await addVehicle(payload);
+        await customerService.addVehicle(customerId, payload);
         setMsg("Vehicle added!");
       }
 
       resetForm();
+      fetchVehicles();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
-      setErrors({ submit: err.message });
+      setErrors({ submit: err.message || "Operation failed" });
     }
   }
 
@@ -74,12 +98,13 @@ export default function VehiclesPage() {
 
   async function handleDelete(id) {
     try {
-      await deleteVehicle(id);
+      await customerService.deleteVehicle(customerId, id);
       setDeleteConfirm(null);
       setMsg("Vehicle removed!");
+      fetchVehicles();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
-      setMsg(err.message);
+      setMsg(err.message || "Failed to delete vehicle");
     }
   }
 
@@ -95,6 +120,11 @@ export default function VehiclesPage() {
       {msg && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
           {msg}
+        </div>
+      )}
+      {errors.fetch && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {errors.fetch}
         </div>
       )}
 
@@ -141,7 +171,11 @@ export default function VehiclesPage() {
         </div>
       )}
 
-      {vehicles.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
+          <p className="text-slate-400">Loading vehicles...</p>
+        </div>
+      ) : vehicles.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
           <p className="text-slate-400">No vehicles registered yet. Add your first vehicle above.</p>
         </div>
