@@ -7,12 +7,16 @@ import AdminDashboard from "../pages/admin/Dashboard";
 import PartsPage from "../pages/admin/PartsPage";
 import VendorsPage from "../pages/admin/VendorsPage";
 import UsersPage from "../pages/admin/UsersPage";
+import AdminNotificationsPage from "../pages/admin/NotificationsPage";
 import StaffDashboard from "../pages/staff/Dashboard";
 import SearchPage from "../pages/staff/SearchPage";
 import RegisterCustomer from "../pages/staff/RegisterCustomer";
 import SalesPage from "../pages/staff/SalesPage";
 import InvoicePage from "../pages/staff/InvoicePage";
 import StaffHistoryPage from "../pages/staff/StaffHistoryPage";
+import PartRequestsPage from "../pages/staff/PartRequestsPage";
+import CreditPaymentsPage from "../pages/staff/CreditPaymentsPage";
+import ReportsPage from "../pages/staff/ReportsPage";
 import CustomerDashboard from "../pages/customer/Dashboard";
 import ProfilePage from "../pages/customer/ProfilePage";
 import VehiclesPage from "../pages/customer/VehiclesPage";
@@ -74,6 +78,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/notifications"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.ADMIN]}>
+            <AdminNotificationsPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Staff Routes - Protected */}
       <Route
@@ -121,6 +133,30 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRoles={[USER_ROLES.STAFF]}>
             <StaffHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/part-requests"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF]}>
+            <PartRequestsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/credit-payments"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF]}>
+            <CreditPaymentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/reports"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.STAFF]}>
+            <ReportsPage />
           </ProtectedRoute>
         }
       />

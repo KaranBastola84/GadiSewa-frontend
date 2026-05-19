@@ -12,15 +12,21 @@ import {
   Menu,
   BriefcaseBusiness,
   X,
-  Search
+  Search,
+  BarChart,
+  PackageOpen,
+  CreditCard
 } from "lucide-react";
 
 const staffNavItems = [
   { to: "/staff/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/staff/reports", label: "Reports", icon: BarChart },
   { to: "/staff/search", label: "Search Customers", icon: Search },
   { to: "/staff/customers", label: "Register Customer", icon: Users },
+  { to: "/staff/part-requests", label: "Part Requests", icon: PackageOpen },
   { to: "/staff/sales", label: "Point of Sale", icon: ShoppingCart },
   { to: "/staff/invoice", label: "Invoices", icon: Receipt },
+  { to: "/staff/credit-payments", label: "Credit Payments", icon: CreditCard },
   { to: "/staff/history", label: "Customer History", icon: History },
 ];
 
