@@ -23,8 +23,28 @@ export default function RequestsPage() {
         partRequestsService.getRequests(),
         customerId ? customerService.getVehicles(customerId) : Promise.resolve([])
       ]);
-      setRequests(Array.isArray(reqRes) ? reqRes : reqRes?.result || reqRes?.requests || []);
-      setVehicles(Array.isArray(vehRes) ? vehRes : vehRes?.result || vehRes?.vehicles || []);
+      const rawReq = Array.isArray(reqRes) ? reqRes : reqRes?.result || reqRes?.requests || [];
+      const statusMap = {
+        1: "Requested",
+        2: "Approved",
+        3: "Rejected",
+        4: "Ordered",
+        5: "Fulfilled",
+      };
+      setRequests(
+        rawReq.map((r) => ({
+          ...r,
+          statusText: statusMap[r.status] || r.status || "Requested",
+        }))
+      );
+
+      const rawVeh = Array.isArray(vehRes) ? vehRes : vehRes?.result || vehRes?.vehicles || [];
+      setVehicles(
+        rawVeh.map((v) => ({
+          ...v,
+          id: v.vehicleId || v.id,
+        }))
+      );
     } catch (err) {
       console.error(err);
       setErrors({ fetch: err.message || "Failed to load data" });
@@ -67,10 +87,11 @@ export default function RequestsPage() {
 
   function statusBadge(status) {
     const map = {
-      Processing: "bg-blue-50 text-blue-700",
-      Pending: "bg-amber-50 text-amber-700",
-      Available: "bg-green-50 text-green-700",
-      Cancelled: "bg-red-50 text-red-700",
+      Approved: "bg-blue-50 text-blue-700",
+      Requested: "bg-amber-50 text-amber-700",
+      Fulfilled: "bg-green-50 text-green-700",
+      Rejected: "bg-red-50 text-red-700",
+      Ordered: "bg-purple-50 text-purple-700",
     };
     return map[status] || "bg-slate-50 text-slate-700";
   }
@@ -175,7 +196,7 @@ export default function RequestsPage() {
                     req.urgency === "High" ? "bg-orange-50 text-orange-600" :
                     "bg-slate-50 text-slate-500"
                   }`}>{req.urgency}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadge(req.status)}`}>{req.status}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadge(req.statusText)}`}>{req.statusText}</span>
                 </div>
               </div>
               <p className="text-sm text-slate-500">{req.vehicleModel} {req.brand && `• ${req.brand}`}</p>

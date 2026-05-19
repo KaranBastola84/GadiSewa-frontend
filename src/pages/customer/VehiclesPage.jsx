@@ -33,8 +33,12 @@ export default function VehiclesPage() {
     try {
       setLoading(true);
       const data = await customerService.getVehicles(customerId);
+      const list = Array.isArray(data) ? data : data?.result || data?.vehicles || [];
       setVehicles(
-        Array.isArray(data) ? data : data?.result || data?.vehicles || [],
+        list.map((v) => ({
+          ...v,
+          id: v.vehicleId || v.id,
+        }))
       );
     } catch (err) {
       console.error(err);

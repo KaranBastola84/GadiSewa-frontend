@@ -2,19 +2,15 @@ import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
 import { Star } from "lucide-react";
 import reviewsService from "../../services/reviewsService";
-
-const serviceOptions = [
-  "Oil Change", "Brake Pad Replacement", "Engine Tune-Up",
-  "Wheel Alignment", "AC Service", "Full Vehicle Service",
-  "Battery Replacement", "General Parts Purchase",
-];
+import appointmentsService from "../../services/appointmentsService";
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState([]);
+  const [completedAppointments, setCompletedAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [msg, setMsg] = useState("");
-  const [form, setForm] = useState({ serviceType: "", rating: 0, comment: "" });
+  const [form, setForm] = useState({ appointmentId: "", rating: 0, comment: "" });
   const [errors, setErrors] = useState({});
 
   const fetchReviews = async () => {
@@ -30,8 +26,21 @@ export default function ReviewsPage() {
     }
   };
 
+  const fetchCompletedAppointments = async () => {
+    try {
+      const data = await appointmentsService.getAppointments();
+      const rawList = Array.isArray(data) ? data : data?.result || data?.appointments || [];
+      // Completed status is 4
+      const completed = rawList.filter((a) => a.status === 4);
+      setCompletedAppointments(completed);
+    } catch (err) {
+      console.error("Failed to load completed appointments:", err);
+    }
+  };
+
   useEffect(() => {
     fetchReviews();
+    fetchCompletedAppointments();
   }, []);
 
   function handleChange(e) {
@@ -40,7 +49,7 @@ export default function ReviewsPage() {
 
   function validate() {
     const errs = {};
-    if (!form.serviceType) errs.serviceType = "Required";
+    if (!form.appointmentId) errs.appointmentId = "Select an appointment";
     if (!form.rating) errs.rating = "Give a rating";
     if (!form.comment.trim()) errs.comment = "Write something";
     setErrors(errs);
@@ -51,11 +60,16 @@ export default function ReviewsPage() {
     e.preventDefault();
     if (!validate()) return;
     try {
-      await reviewsService.createReview(form);
-      setForm({ serviceType: "", rating: 0, comment: "" });
+      await reviewsService.createReview({
+        appointmentId: form.appointmentId,
+        rating: Number(form.rating),
+        comment: form.comment.trim(),
+      });
+      setForm({ appointmentId: "", rating: 0, comment: "" });
       setShowForm(false);
       setMsg("Review submitted! Thanks for the feedback.");
       fetchReviews();
+      fetchCompletedAppointments();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
       setErrors({ submit: err.message || "Failed to submit review" });
@@ -111,43 +125,81 @@ export default function ReviewsPage() {
         <div className="bg-white rounded-xl border border-slate-200 p-5 mb-5">
           <h3 className="font-bold text-slate-800 mb-4">Write a Review</h3>
           {errors.submit && <p className="text-sm text-red-600 mb-3">{errors.submit}</p>}
-          <form onSubmit={handleSubmit}>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Service *</label>
-                <select name="serviceType" value={form.serviceType} onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-lg text-sm bg-white ${errors.serviceType ? "border-red-400" : "border-slate-200"}`}>
-                  <option value="">Select</option>
-                  {serviceOptions.map((s) => <option key={s}>{s}</option>)}
-                </select>
-                {errors.serviceType && <p className="text-xs text-red-500 mt-1">{errors.serviceType}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Rating *</label>
-                <div className="flex gap-1 mt-1">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <button key={s} type="button" onClick={() => setForm({ ...form, rating: s })}
-                      className="text-2xl hover:scale-110 transition">
-                      {s <= form.rating ? <Star size={24} className="text-yellow-400 fill-yellow-400" /> : <Star size={24} className="text-slate-300" />}
-                    </button>
-                  ))}
+          {completedAppointments.length === 0 ? (
+            <p className="text-sm text-slate-500 py-2">
+              You must have at least one completed appointment to write a review.
+            </p>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Appointment *</label>
+                  <select
+                    name="appointmentId"
+                    value={form.appointmentId}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 border rounded-lg text-sm bg-white ${
+                      errors.appointmentId ? "border-red-400" : "border-slate-200"
+                    }`}
+                  >
+                    <option value="">Select completed appointment</option>
+                    {completedAppointments.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.vehicleName} - {new Date(a.scheduledAt).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.appointmentId && <p className="text-xs text-red-500 mt-1">{errors.appointmentId}</p>}
                 </div>
-                {errors.rating && <p className="text-xs text-red-500 mt-1">{errors.rating}</p>}
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Rating *</label>
+                  <div className="flex gap-1 mt-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setForm({ ...form, rating: s })}
+                        className="text-2xl hover:scale-110 transition cursor-pointer"
+                      >
+                        {s <= form.rating ? (
+                          <Star size={24} className="text-yellow-400 fill-yellow-400" />
+                        ) : (
+                          <Star size={24} className="text-slate-300" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {errors.rating && <p className="text-xs text-red-500 mt-1">{errors.rating}</p>}
+                </div>
               </div>
-            </div>
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-slate-600 mb-1">Comment *</label>
-              <textarea name="comment" value={form.comment} onChange={handleChange} rows={3}
-                placeholder="Your experience..."
-                className={`w-full px-3 py-2 border rounded-lg text-sm resize-none ${errors.comment ? "border-red-400" : "border-slate-200"}`} />
-              {errors.comment && <p className="text-xs text-red-500 mt-1">{errors.comment}</p>}
-            </div>
-            <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100">
-              <button type="submit" className="px-5 py-2 bg-sky-600 text-white rounded-lg text-sm font-semibold">Submit</button>
-              <button type="button" onClick={() => setShowForm(false)}
-                className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold">Cancel</button>
-            </div>
-          </form>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-600 mb-1">Comment *</label>
+                <textarea
+                  name="comment"
+                  value={form.comment}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Your experience..."
+                  className={`w-full px-3 py-2 border rounded-lg text-sm resize-none ${
+                    errors.comment ? "border-red-400" : "border-slate-200"
+                  }`}
+                />
+                {errors.comment && <p className="text-xs text-red-500 mt-1">{errors.comment}</p>}
+              </div>
+              <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="submit" className="px-5 py-2 bg-sky-600 text-white rounded-lg text-sm font-semibold cursor-pointer">
+                  Submit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-5 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
@@ -165,8 +217,12 @@ export default function ReviewsPage() {
             <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-4">
               <div className="flex justify-between mb-2">
                 <div>
-                  <h4 className="font-bold text-slate-800">{r.serviceType}</h4>
-                  <p className="text-xs text-slate-400">{r.date ? new Date(r.date).toLocaleDateString() : ""}</p>
+                  <h4 className="font-bold text-slate-800">
+                    Appointment #{r.appointmentNumber} ({r.vehicleRegistrationNumber})
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ""}
+                  </p>
                 </div>
                 <span className={`px-2 py-0.5 rounded text-xs font-bold ${
                   r.rating >= 4 ? "bg-green-50 text-green-700" : r.rating >= 3 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"
