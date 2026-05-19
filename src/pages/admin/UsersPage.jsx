@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { adminUsersService } from "../../services";
 import { adminStaffService } from "../../services";
-import { USER_ROLES } from "../../constants";
+import { USER_ROLES } from "../../context/AuthContext";
 
 const roleLabels = {
   Admin: "Admin",
