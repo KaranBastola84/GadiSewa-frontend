@@ -70,7 +70,6 @@ export default function ProfilePage() {
     };
   }, [token, updateProfile]);
 
-  // Fetch totalSpent from real API data
   useEffect(() => {
     let isActive = true;
 

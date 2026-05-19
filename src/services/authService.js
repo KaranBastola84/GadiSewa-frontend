@@ -1,8 +1,5 @@
 import apiConfig from "../config/apiConfig";
 
-/**
- * Service for authentication related API calls
- */
 export const authService = {
   registerUser: async (userData) => {
     try {
