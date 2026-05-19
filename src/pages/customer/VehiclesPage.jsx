@@ -27,27 +27,7 @@ export default function VehiclesPage() {
     try {
       setLoading(true);
       const data = await customerService.getVehicles(customerId);
-      // Ensure data is array
       setVehicles(Array.isArray(data) ? data : data?.result || data?.vehicles || []);
-    } catch (err) {
-      console.error(err);
-      setErrors({ fetch: err.message || "Failed to load vehicles" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchVehicles();
-  }, [customerId]);
-
-  const fetchVehicles = async () => {
-    if (!customerId) return;
-    try {
-      setLoading(true);
-      const data = await customerService.getVehicles(customerId);
-      const list = Array.isArray(data) ? data : data?.result || [];
-      setVehicles(list);
     } catch (err) {
       console.error(err);
       setErrors({ fetch: err.message || "Failed to load vehicles" });
