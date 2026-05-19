@@ -21,11 +21,44 @@ export const adminService = {
   deletePart: (id) => apiRequest(`/admin/parts/${id}`, { method: 'DELETE' }),
 
   // Purchase Invoices
-  getPurchaseInvoices: () => apiRequest('/admin/purchase-invoices'),
+  getPurchaseInvoices: (vendorId, status) => {
+    let url = '/admin/purchase-invoices';
+    const params = [];
+    if (vendorId) params.push(`vendorId=${vendorId}`);
+    if (status) params.push(`status=${status}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return apiRequest(url);
+  },
+  createPurchaseInvoice: (invoiceData) => apiRequest('/admin/purchase-invoices', { method: 'POST', body: JSON.stringify(invoiceData) }),
+  updatePurchaseInvoice: (id, invoiceData) => apiRequest(`/admin/purchase-invoices/${id}`, { method: 'PUT', body: JSON.stringify(invoiceData) }),
+  receiveStock: (id, receiveData) => apiRequest(`/admin/purchase-invoices/${id}/receive-stock`, { method: 'POST', body: JSON.stringify(receiveData) }),
+  deletePurchaseInvoice: (id) => apiRequest(`/admin/purchase-invoices/${id}`, { method: 'DELETE' }),
   
   // Financial Reports
-  getDashboardStats: () => apiRequest('/admin/financial-reports/dashboard-stats'), // Hypothetical endpoint for dashboard
-  getFinancialSummary: (startDate, endDate) => apiRequest(`/admin/financial-reports/summary?startDate=${startDate}&endDate=${endDate}`),
+  getDailyReport: (startDate, endDate) => {
+    let url = '/admin/financial-reports/daily';
+    const params = [];
+    if (startDate) params.push(`startDate=${startDate}`);
+    if (endDate) params.push(`endDate=${endDate}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return apiRequest(url);
+  },
+  getMonthlyReport: (startDate, endDate) => {
+    let url = '/admin/financial-reports/monthly';
+    const params = [];
+    if (startDate) params.push(`startDate=${startDate}`);
+    if (endDate) params.push(`endDate=${endDate}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return apiRequest(url);
+  },
+  getYearlyReport: (startDate, endDate) => {
+    let url = '/admin/financial-reports/yearly';
+    const params = [];
+    if (startDate) params.push(`startDate=${startDate}`);
+    if (endDate) params.push(`endDate=${endDate}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return apiRequest(url);
+  },
 };
 
 export default adminService;

@@ -27,7 +27,7 @@ const CustomerSearch = () => {
       else data = await searchByPhone(query.trim());
 
       // normalise: API may return {data:[...]} or directly [...]
-      const list = Array.isArray(data) ? data : (data?.data ?? []);
+      const list = data?.result || data?.data || (Array.isArray(data) ? data : []);
       setResults(list);
     } catch (err) {
       showToast(err?.response?.data?.message || 'Search failed');
@@ -91,7 +91,7 @@ const CustomerSearch = () => {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={placeholders[activeTab]}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
           <button
@@ -124,8 +124,8 @@ const CustomerSearch = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {results.map(customer => (
               <Link
-                key={customer.id}
-                to={`/staff/customers/${customer.id}`}
+                key={customer.customerId || customer.id}
+                to={`/staff/customers/${customer.customerId || customer.id}`}
                 className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:border-blue-500 hover:shadow-md transition-all group"
               >
                 <div className="flex items-start gap-4">

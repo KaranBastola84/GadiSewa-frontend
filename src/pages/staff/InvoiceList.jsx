@@ -85,7 +85,7 @@ const InvoiceList = () => {
               placeholder="Search invoice or customer…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
           <div className="flex gap-1 flex-wrap">

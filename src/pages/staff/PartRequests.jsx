@@ -37,30 +37,8 @@ const PartRequests = () => {
       const partsRes = await getParts();
       setParts(partsRes?.result || partsRes?.data || partsRes || []);
     } catch (err) {
-      showToast('Error loading live part requests, using offline demo mode.', 'info');
-      // Offline fallback
-      setRequests([
-        {
-          id: '1',
-          requestNumber: 'PR-20260519-A3F2',
-          partName: 'Brembo Brake Pads',
-          quantityRequested: 4,
-          status: 0,
-          neededBy: '2026-05-25T00:00:00Z',
-          requestedByName: 'Santosh Giri (Staff)',
-          notes: 'Urgent requirement for Hyundai Tucson'
-        },
-        {
-          id: '2',
-          requestNumber: 'PR-20260518-8F4C',
-          partName: 'Mobil1 Synthetic Oil 5W-30',
-          quantityRequested: 12,
-          status: 1,
-          neededBy: '2026-05-28T00:00:00Z',
-          requestedByName: 'Karan Bastola (Customer)',
-          notes: 'Standard stock top up'
-        }
-      ]);
+      showToast(err?.message || 'Failed to fetch live part requests.', 'error');
+      setRequests([]);
     } finally {
       setIsLoading(false);
     }
@@ -71,10 +49,6 @@ const PartRequests = () => {
   }, []);
 
   const handleStatusChange = async (id, currentStatus) => {
-    // Next transitions according to backend:
-    // Requested -> Approved or Rejected
-    // Approved -> Ordered or Rejected
-    // Ordered -> Fulfilled or Rejected
     let nextStatus;
     if (currentStatus === 0) nextStatus = 1; // Approve
     else if (currentStatus === 1) nextStatus = 3; // Order
@@ -86,9 +60,7 @@ const PartRequests = () => {
       showToast('Status updated successfully!');
       loadData();
     } catch (err) {
-      // Offline fallback toggle for high interactivity
-      setRequests(prev => prev.map(req => req.id === id ? { ...req, status: nextStatus } : req));
-      showToast('Offline mode: Updated request status locally.');
+      showToast(err?.message || 'Failed to update request status on server.', 'error');
     }
   };
 
@@ -98,8 +70,7 @@ const PartRequests = () => {
       showToast('Part request rejected.');
       loadData();
     } catch (err) {
-      setRequests(prev => prev.map(req => req.id === id ? { ...req, status: 2 } : req));
-      showToast('Offline mode: Rejected request locally.');
+      showToast(err?.message || 'Failed to reject part request on server.', 'error');
     }
   };
 
@@ -164,7 +135,7 @@ const PartRequests = () => {
                     <tr key={req.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="p-6">
                         <p className="text-xs font-black text-slate-900 tracking-tighter uppercase">{req.requestNumber}</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">By: {req.requestedByName || 'System User'}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">By: {req.requestedByName || (req.requestedByStaff ? `${req.requestedByStaff.user.firstName} ${req.requestedByStaff.user.lastName}` : 'System User')}</p>
                         {req.notes && <p className="text-[10px] text-slate-400 italic mt-1">"{req.notes}"</p>}
                       </td>
                       <td className="p-6">

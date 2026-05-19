@@ -36,7 +36,7 @@ const CreateInvoice = () => {
       setIsLoading(true);
       try {
         const res = await getParts();
-        setParts(Array.isArray(res) ? res : (res?.data ?? []));
+        setParts(res?.result || res?.data || (Array.isArray(res) ? res : []));
       } catch (_) { /* parts optional */ }
       finally { setIsLoading(false); }
     })();
@@ -47,7 +47,7 @@ const CreateInvoice = () => {
     setIsSearching(true);
     try {
       const res = await searchCustomers(q);
-      setCustomerResults(Array.isArray(res) ? res : (res?.data ?? []));
+      setCustomerResults(res?.result || res?.data || (Array.isArray(res) ? res : []));
       setShowCustomerDropdown(true);
     } catch (_) { setCustomerResults([]); }
     finally { setIsSearching(false); }
@@ -61,7 +61,7 @@ const CreateInvoice = () => {
 
   const selectCustomer = (c) => {
     const name = c.firstName && c.lastName ? `${c.firstName} ${c.lastName}` : c.fullName || c.name || 'Customer';
-    setSelectedCustomer({ id: c.id, name });
+    setSelectedCustomer({ id: c.customerId || c.id, name });
     setCustomerQuery(name);
     setShowCustomerDropdown(false);
   };
@@ -111,7 +111,7 @@ const CreateInvoice = () => {
         })),
       };
       const res = await createSalesInvoice(payload);
-      const newId = res?.data?.id || res?.id;
+      const newId = res?.result?.id || res?.data?.id || res?.id;
       showToast('Invoice created successfully!');
       setTimeout(() => navigate(newId ? `/staff/invoices/${newId}` : '/staff/invoices'), 1200);
     } catch (err) {
@@ -151,7 +151,7 @@ const CreateInvoice = () => {
               value={customerQuery}
               onChange={e => { setCustomerQuery(e.target.value); setSelectedCustomer(null); }}
               onFocus={() => customerResults.length > 0 && setShowCustomerDropdown(true)}
-              className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-blue-500 transition-colors"
             />
             {isSearching && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -164,7 +164,7 @@ const CreateInvoice = () => {
                   const name = c.firstName && c.lastName ? `${c.firstName} ${c.lastName}` : c.fullName || 'Customer';
                   return (
                     <button
-                      key={c.id}
+                      key={c.customerId || c.id}
                       type="button"
                       onClick={() => selectCustomer(c)}
                       className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0"
@@ -235,7 +235,7 @@ const CreateInvoice = () => {
                         placeholder="Part name"
                         value={item.partName}
                         onChange={e => updateLineItem(idx, 'partName', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 transition-colors"
                       />
                     )}
                   </div>
@@ -245,7 +245,7 @@ const CreateInvoice = () => {
                       min="1"
                       value={item.quantity}
                       onChange={e => updateLineItem(idx, 'quantity', e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 text-center transition-colors"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 text-center transition-colors"
                     />
                   </div>
                   <div className="col-span-4 md:col-span-3">
@@ -254,7 +254,7 @@ const CreateInvoice = () => {
                       min="0"
                       value={item.unitPrice}
                       onChange={e => updateLineItem(idx, 'unitPrice', e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-3 text-sm text-slate-900 focus:outline-none focus:border-blue-500 transition-colors"
                     />
                   </div>
                   <div className="col-span-3 md:col-span-2 flex items-center justify-end gap-2">
@@ -304,7 +304,7 @@ const CreateInvoice = () => {
                 onChange={e => setNotes(e.target.value)}
                 rows={3}
                 placeholder="Optional notes…"
-                className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-blue-500 resize-none transition-colors"
+                className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm text-slate-900 focus:outline-none focus:border-blue-500 resize-none transition-colors"
               />
             </div>
           </div>

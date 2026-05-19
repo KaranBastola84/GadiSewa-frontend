@@ -120,8 +120,8 @@ const InvoiceDetail = () => {
             <p className="text-base font-bold text-slate-900">{customerName}</p>
             {invoice.customer?.email && <p className="text-sm text-slate-400">{invoice.customer.email}</p>}
             {invoice.customer?.phoneNumber && <p className="text-sm text-slate-500 font-medium">{invoice.customer.phoneNumber}</p>}
-            {invoice.customer?.id && (
-              <Link to={`/staff/customers/${invoice.customer.id}`} className="text-xs font-bold text-blue-600 hover:underline mt-1 inline-block">
+            {(invoice.customer?.id || invoice.customer?.customerId) && (
+              <Link to={`/staff/customers/${invoice.customer.id || invoice.customer.customerId}`} className="text-xs font-bold text-blue-600 hover:underline mt-1 inline-block">
                 View Profile →
               </Link>
             )}

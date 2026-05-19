@@ -89,7 +89,7 @@ const RegisterCustomer = () => {
       const res = await registerCustomer(payload);
       // Backend returns ApiResponse<CustomerRegistrationResponseDto>
       // Let's get customerId from res.data or res
-      const customerId = res?.data?.customerId || res?.customerId || res?.data?.id || res?.id;
+      const customerId = res?.result?.customerId || res?.result?.id || res?.data?.customerId || res?.customerId || res?.data?.id || res?.id;
       showToast('Customer & vehicle registered successfully!');
       setTimeout(() => {
         if (customerId) {

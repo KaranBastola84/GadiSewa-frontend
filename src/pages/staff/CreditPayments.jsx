@@ -28,26 +28,11 @@ const CreditPayments = () => {
       setPayments(res?.result || res?.data || res || []);
 
       const invoicesRes = await getSalesInvoices();
-      // Only show invoices that have outstanding balance
       const allInvoices = invoicesRes?.result || invoicesRes?.data || invoicesRes || [];
       setInvoices(allInvoices.filter(inv => inv.amountDue > 0));
     } catch (err) {
-      showToast('Error fetching live ledger data, using offline demo mode.', 'info');
-      // Fallback
-      setPayments([
-        {
-          creditPaymentId: '1',
-          invoiceNumber: 'INV-2026-0004',
-          customerName: 'Suresh Bhatta',
-          amount: 5000,
-          amountBeforePayment: 8500,
-          amountAfterPayment: 3500,
-          paymentDate: '2026-05-19T10:15:00Z',
-          paymentMethod: 'Esewa',
-          referenceNumber: 'TXN-9842A',
-          notes: 'Partial payment received online'
-        }
-      ]);
+      showToast(err?.message || 'Failed to fetch live credit settlement data.', 'error');
+      setPayments([]);
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +66,6 @@ const CreditPayments = () => {
       await recordCreditPayment(payload);
       showToast('Credit payment recorded successfully!');
       setShowModal(false);
-      // Reset form
       setFormData({
         salesInvoiceId: '',
         amount: '',
@@ -92,23 +76,7 @@ const CreditPayments = () => {
       });
       loadData();
     } catch (err) {
-      showToast(err?.response?.data?.message || 'Failed to record payment. Checked offline mode.', 'info');
-      // Offline fallback addition
-      const selectedInvoice = invoices.find(inv => inv.id === formData.salesInvoiceId);
-      const newPayment = {
-        creditPaymentId: Date.now().toString(),
-        invoiceNumber: selectedInvoice?.invoiceNumber || 'INV-TEMP',
-        customerName: selectedInvoice?.customerName || 'Offline Customer',
-        amount: Number(formData.amount),
-        amountBeforePayment: selectedInvoice?.amountDue || 10000,
-        amountAfterPayment: Math.max(0, (selectedInvoice?.amountDue || 10000) - Number(formData.amount)),
-        paymentDate: new Date().toISOString(),
-        paymentMethod: formData.paymentMethod,
-        referenceNumber: formData.referenceNumber || 'N/A',
-        notes: formData.notes
-      };
-      setPayments(prev => [newPayment, ...prev]);
-      setShowModal(false);
+      showToast(err?.response?.data?.message || 'Failed to submit credit payment to server.', 'error');
     }
   };
 
@@ -201,7 +169,6 @@ const CreditPayments = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto flex-1">
-              {/* Select Invoice */}
               <div className="space-y-1">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Active Credit Invoice</label>
                 <select
@@ -225,7 +192,6 @@ const CreditPayments = () => {
                 </select>
               </div>
 
-              {/* Amount */}
               <div className="space-y-1">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Amount (Rs.)</label>
                 <input
@@ -237,7 +203,6 @@ const CreditPayments = () => {
                 />
               </div>
 
-              {/* Method & Ref */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Method</label>
@@ -264,7 +229,6 @@ const CreditPayments = () => {
                 </div>
               </div>
 
-              {/* Notes */}
               <div className="space-y-1">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Notes / Ledger Remarks</label>
                 <textarea
@@ -276,7 +240,6 @@ const CreditPayments = () => {
                 />
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 className="w-full py-4 bg-[#1c1c1c] hover:bg-black text-white rounded-2xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95"
