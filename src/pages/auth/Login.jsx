@@ -53,21 +53,21 @@ const Login = () => {
         };
 
         const response = await authService.loginUser(credentials);
+        const authData = response?.result || response;
 
         // On success: Store user data in localStorage
-        // Assuming response structure contains token and user info
-        if (response.token) {
-          localStorage.setItem('token', response.token);
+        if (authData.token) {
+          localStorage.setItem('token', authData.token);
         }
 
         // Storing name and role as requested
-        localStorage.setItem('userName', response.fullName || response.userName || 'User');
-        localStorage.setItem('userRole', response.role || 'User');
+        localStorage.setItem('userName', authData.fullName || authData.userName || 'User');
+        localStorage.setItem('userRole', authData.role || 'User');
 
-        // Redirect based on role
-        if (response.role === 1 || response.role === 'Admin') {
+        // Redirect based on role (1 = Admin, 2 = Staff, 3 = Customer)
+        if (authData.role === 1 || authData.role === 'Admin') {
           window.location.href = '/admin/dashboard';
-        } else if (response.role === 2 || response.role === 'Staff') {
+        } else if (authData.role === 2 || authData.role === 'Staff') {
           window.location.href = '/staff/dashboard';
         } else {
           window.location.href = '/dashboard';
