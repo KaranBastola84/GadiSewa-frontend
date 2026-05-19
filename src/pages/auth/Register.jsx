@@ -130,7 +130,6 @@ const Register = () => {
           </div>
         </div>
 
-        {/* Right Side - Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col items-center">
           <div className="mb-6 text-center">
             <h1 className="text-3xl font-black italic tracking-tighter text-slate-900 uppercase">
