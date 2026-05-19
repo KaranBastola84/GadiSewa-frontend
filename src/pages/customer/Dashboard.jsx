@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [history, setHistory] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const customerId = user?.userId;
+  const customerId = user?.customerId;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,11 +45,37 @@ export default function Dashboard() {
 
         let combinedHistory = [];
         if (histRes.status === "fulfilled") {
-          const serviceData = Array.isArray(histRes.value) ? histRes.value : histRes.value?.result || [];
+          const summary = histRes.value?.result || histRes.value || {};
+          const appointments = summary.recentAppointments || [];
+          const invoices = summary.recentInvoices || [];
+          
+          const serviceData = appointments.map(item => {
+            const linkedInvoice = invoices.find(inv => inv.appointmentId === item.appointmentId);
+            return {
+              id: linkedInvoice?.invoiceId || item.appointmentId,
+              invoiceNo: linkedInvoice?.invoiceNumber || item.appointmentNumber,
+              date: item.completedAt || item.scheduledAt,
+              description: item.problemDescription || "Vehicle Service",
+              vehicle: item.vehicleRegistration,
+              amount: linkedInvoice?.totalAmount || 0,
+              discount: linkedInvoice?.discountAmount || 0,
+              status: linkedInvoice?.status || item.status,
+            };
+          });
           combinedHistory = [...combinedHistory, ...serviceData.map(item => ({ ...item, type: "Service" }))];
         }
         if (invRes.status === "fulfilled") {
-          const invoiceData = Array.isArray(invRes.value) ? invRes.value : invRes.value?.result || [];
+          const invoices = Array.isArray(invRes.value) ? invRes.value : invRes.value?.result || [];
+          const invoiceData = invoices.map(item => ({
+            id: item.invoiceId,
+            invoiceNo: item.invoiceNumber,
+            date: item.invoiceDate,
+            description: item.items?.[0]?.description || "Parts Purchase",
+            vehicle: "-",
+            amount: item.totalAmount,
+            discount: item.discountAmount,
+            status: item.status,
+          }));
           combinedHistory = [...combinedHistory, ...invoiceData.map(item => ({ ...item, type: "Purchase" }))];
         }
         

@@ -49,7 +49,7 @@ export default function AppointmentsPage() {
   });
   const [errors, setErrors] = useState({});
 
-  const customerId = user?.userId;
+  const customerId = user?.customerId;
 
   const fetchData = async () => {
     if (!customerId) return;

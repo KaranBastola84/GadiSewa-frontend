@@ -14,7 +14,7 @@ export default function RequestsPage() {
   const [form, setForm] = useState({ partName: "", brand: "", vehicleModel: "", urgency: "Medium", notes: "" });
   const [errors, setErrors] = useState({});
 
-  const customerId = user?.userId;
+  const customerId = user?.customerId;
 
   const fetchData = async () => {
     try {
