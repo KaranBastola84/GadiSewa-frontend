@@ -9,4 +9,5 @@ export { default as financialReportsService } from "./financialReportsService";
 export { default as inventoryReportsService } from "./inventoryReportsService";
 export { default as partRequestsService } from "./partRequestsService";
 export { default as reviewsService } from "./reviewsService";
+export { default as customerService } from "./customerService";
 export { default as staffCustomersService } from "./staffCustomersService";

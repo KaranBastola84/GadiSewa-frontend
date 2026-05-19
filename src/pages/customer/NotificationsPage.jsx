@@ -1,14 +1,22 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import CustomerLayout from "../../components/CustomerLayout";
 import { useCustomer } from "../../context/CustomerContext";
+import { Bell, CheckCheck } from "lucide-react";
 
 export default function NotificationsPage() {
   const { notifications, markRead, markAllRead, unreadCount } = useCustomer();
+  const [filter, setFilter] = useState("all");
 
-  // sort: unread first, then newest
   const sorted = [...notifications].sort((a, b) => {
     if (a.read !== b.read) return a.read ? 1 : -1;
     return new Date(b.date) - new Date(a.date);
+  });
+
+  const filtered = sorted.filter((n) => {
+    if (filter === "unread") return !n.read;
+    if (filter === "read") return n.read;
+    return true;
   });
 
   function timeAgo(dateStr) {
@@ -22,14 +30,12 @@ export default function NotificationsPage() {
 
   function typeBadge(type) {
     const map = {
-      ai_prediction: {
-        label: "AI Prediction",
-        cls: "bg-violet-50 text-violet-700",
-      },
+      appointment: { label: "Appointment", cls: "bg-sky-50 text-sky-700" },
+      payment: { label: "Payment", cls: "bg-red-50 text-red-700" },
       credit_reminder: { label: "Payment", cls: "bg-red-50 text-red-700" },
       loyalty: { label: "Loyalty", cls: "bg-amber-50 text-amber-700" },
-      low_stock: { label: "Stock", cls: "bg-orange-50 text-orange-700" },
-      general: { label: "Info", cls: "bg-sky-50 text-sky-700" },
+      service: { label: "Service", cls: "bg-violet-50 text-violet-700" },
+      general: { label: "Info", cls: "bg-slate-50 text-slate-700" },
     };
     return map[type] || map.general;
   }
@@ -43,30 +49,39 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition"
+            className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition"
           >
-            Mark all read
+            <CheckCheck size={15} /> Mark all read
           </button>
         )}
       </div>
 
-      <div className="bg-violet-50 border border-violet-200 rounded-lg p-4 mb-5">
-        <h3 className="text-sm font-bold text-violet-800">
-          AI Vehicle Health Predictions
-        </h3>
-        <p className="text-xs text-violet-600 mt-1">
-          Our AI analyzes your vehicle condition and mileage to predict part
-          failures before they happen.
-        </p>
+      <div className="flex gap-2 mb-4">
+        {["all", "unread", "read"].map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition ${
+              filter === f
+                ? "bg-sky-600 text-white"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            {f}
+          </button>
+        ))}
       </div>
 
-      {sorted.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
-          <p className="text-slate-400">No notifications.</p>
+          <Bell size={32} className="mx-auto text-slate-300 mb-3" />
+          <p className="text-slate-400">
+            {filter === "unread" ? "No unread notifications." : "No notifications yet."}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {sorted.map((n) => {
+          {filtered.map((n) => {
             const badge = typeBadge(n.type);
             return (
               <div
@@ -101,20 +116,20 @@ export default function NotificationsPage() {
                     >
                       {n.message}
                     </p>
-                    {!n.read && n.type === "ai_prediction" && (
-                      <Link
-                        to="/customer/appointments"
-                        className="inline-block mt-2 px-3 py-1 bg-violet-600 text-white text-xs rounded font-semibold"
-                      >
-                        Book Service
-                      </Link>
-                    )}
                     {!n.read && n.type === "credit_reminder" && (
                       <Link
                         to="/customer/history"
                         className="inline-block mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded font-semibold"
                       >
                         View Payment
+                      </Link>
+                    )}
+                    {!n.read && (n.type === "appointment" || n.type === "service") && (
+                      <Link
+                        to="/customer/appointments"
+                        className="inline-block mt-2 px-3 py-1 bg-sky-600 text-white text-xs rounded font-semibold"
+                      >
+                        View Appointments
                       </Link>
                     )}
                   </div>

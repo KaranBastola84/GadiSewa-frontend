@@ -21,6 +21,7 @@ import HistoryPage from "../pages/customer/HistoryPage";
 import RequestsPage from "../pages/customer/RequestsPage";
 import ReviewsPage from "../pages/customer/ReviewsPage";
 import NotificationsPage from "../pages/customer/NotificationsPage";
+import InvoiceDetailPage from "../pages/customer/InvoiceDetailPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { USER_ROLES } from "../context/AuthContext";
 
@@ -102,7 +103,6 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Customer Routes - Protected */}
       <Route
         path="/customer/dashboard"
         element={
@@ -140,6 +140,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRoles={[USER_ROLES.CUSTOMER]}>
             <HistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customer/invoice/:id"
+        element={
+          <ProtectedRoute requiredRoles={[USER_ROLES.CUSTOMER]}>
+            <InvoiceDetailPage />
           </ProtectedRoute>
         }
       />
