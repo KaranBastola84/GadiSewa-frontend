@@ -29,6 +29,10 @@ export default function UsersPage() {
   const [error, setError] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [selectedRole, setSelectedRole] = useState("");
   const [form, setForm] = useState(initialForm);
 
   const loadUsers = async () => {
@@ -124,6 +128,93 @@ export default function UsersPage() {
       await loadUsers();
     } catch (updateError) {
       setError(updateError.message || "Failed to update user status.");
+    }
+  };
+
+  const openEditModal = (user) => {
+    setEditingUserId(user.userId);
+    setEditForm({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      phoneNumber: user.phoneNumber || "",
+    });
+    setSelectedRole(user.role || "");
+    setShowEditModal(true);
+    setError("");
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingUserId(null);
+    setEditForm({});
+    setSelectedRole("");
+  };
+
+  const handleEditFormChange = (event) => {
+    const { name, value } = event.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    setError("");
+
+    try {
+      // Update user details
+      const updatePayload = {
+        firstName: editForm.firstName.trim(),
+        lastName: editForm.lastName.trim(),
+        phoneNumber: editForm.phoneNumber.trim(),
+      };
+
+      await adminUsersService.updateUserStatus(editingUserId, updatePayload);
+
+      // Update role if changed
+      if (
+        selectedRole &&
+        selectedRole !== users.find((u) => u.userId === editingUserId)?.role
+      ) {
+        await adminUsersService.updateUserRole(editingUserId, {
+          role: selectedRole,
+        });
+      }
+
+      await loadUsers();
+      closeEditModal();
+    } catch (saveError) {
+      setError(saveError.message || "Failed to update user.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangeRole = async (user, newRole) => {
+    const confirmed = window.confirm(
+      `Change ${user.fullName}'s role to ${roleLabels[newRole]}?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await adminUsersService.updateUserRole(user.userId, { role: newRole });
+      await loadUsers();
+    } catch (roleError) {
+      setError(roleError.message || "Failed to update user role.");
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to deactivate ${user.fullName}? This action cannot be undone easily.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await adminUsersService.updateUserStatus(user.userId, {
+        isActive: false,
+      });
+      await loadUsers();
+    } catch (deleteError) {
+      setError(deleteError.message || "Failed to deactivate user.");
     }
   };
 
@@ -324,21 +415,46 @@ export default function UsersPage() {
                           : "Never"}
                       </Td>
                       <Td className="text-right">
-                        <div className="inline-flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openUserDetails(user.userId)}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            View
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleStatus(user)}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            Toggle status
-                          </button>
+                        <div className="inline-flex flex-col gap-1.5">
+                          <div className="inline-flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openUserDetails(user.userId)}
+                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(user)}
+                              className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                          <div className="inline-flex gap-2">
+                            <select
+                              value={user.role}
+                              onChange={(e) =>
+                                handleChangeRole(user, e.target.value)
+                              }
+                              className="rounded-lg border border-orange-200 px-2 py-1.5 text-xs font-semibold text-orange-700 hover:bg-orange-50 bg-white"
+                            >
+                              <option value="">Change role</option>
+                              {Object.values(USER_ROLES).map((role) => (
+                                <option key={role} value={role}>
+                                  {roleLabels[role]}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(user)}
+                              className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+                            >
+                              Deactivate
+                            </button>
+                          </div>
                         </div>
                       </Td>
                     </tr>
@@ -394,6 +510,71 @@ export default function UsersPage() {
               No user details available.
             </p>
           )}
+        </Modal>
+      )}
+
+      {showEditModal && (
+        <Modal title="Edit user" onClose={closeEditModal}>
+          <div className="space-y-4">
+            {error && (
+              <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+            <Field
+              label="First name"
+              name="firstName"
+              value={editForm.firstName}
+              onChange={handleEditFormChange}
+              required
+            />
+            <Field
+              label="Last name"
+              name="lastName"
+              value={editForm.lastName}
+              onChange={handleEditFormChange}
+              required
+            />
+            <Field
+              label="Phone number"
+              name="phoneNumber"
+              value={editForm.phoneNumber}
+              onChange={handleEditFormChange}
+              required
+            />
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-700">Role</span>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              >
+                {Object.values(USER_ROLES).map((role) => (
+                  <option key={role} value={role}>
+                    {roleLabels[role]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                disabled={saving}
+                className="flex-1 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+              >
+                {saving ? "Saving..." : "Save changes"}
+              </button>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </AdminLayout>
