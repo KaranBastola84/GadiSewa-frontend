@@ -4,6 +4,7 @@ const API_BASE_URL = "http://localhost:5030/api";
 
 const apiConfig = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -27,6 +28,16 @@ apiConfig.interceptors.request.use(
 apiConfig.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Handle network errors (server unreachable, timeout, no internet)
+    if (!error.response) {
+      const isTimeout = error.code === 'ECONNABORTED';
+      error.networkError = true;
+      error.message = isTimeout
+        ? 'Request timed out. The server may be busy — please try again.'
+        : 'Unable to connect to the server. Please check your internet connection.';
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
