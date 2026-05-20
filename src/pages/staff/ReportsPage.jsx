@@ -39,13 +39,11 @@ export default function ReportsPage() {
     }
   };
 
-  // Switch tabs
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     fetchReport(tabId);
   };
 
-  // Initial load
   useEffect(() => {
     fetchReport(activeTab);
   }, []);

@@ -21,7 +21,6 @@ export default function RegisterCustomer() {
   });
 
   const onSubmit = (data) => {
-    // We would normally POST to API here
     console.log("Customer Data Submitted:", data);
     alert("Customer Registered Successfully!");
     reset();

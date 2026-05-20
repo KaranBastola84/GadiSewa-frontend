@@ -23,9 +23,6 @@ export default function PartRequestsPage() {
     try {
       setIsLoading(true);
       setError(null);
-      // Wait, endpoint from prompt: /api/part-requests
-      // In asp.net, it's typically /PartRequests or /api/PartRequests natively, 
-      // apiConfig has baseURL: "/api". So we call "/part-requests" or "/PartRequests". Let's use what the user provided.
       const response = await apiConfig.get("/part-requests");
       setRequests(response.data?.result || response.data || []);
     } catch (err) {
@@ -49,12 +46,10 @@ export default function PartRequestsPage() {
         notes: "Updated from Staff UI",
       };
 
-      // API: PUT /api/part-requests/{id}/status
       await apiConfig.put(`/part-requests/${id}/status`, payload);
       
       toast.success("Status updated successfully!");
       
-      // Update local state smoothly without full reload if successful
       setRequests(prev => prev.map(req => 
         req.id === id ? { ...req, status: parseInt(newStatusId, 10) } : req
       ));

@@ -1,7 +1,6 @@
 import React from "react";
 import StaffLayout from "../../components/StaffLayout";
 import { Users, ShoppingCart, DollarSign, PackageOpen, ArrowUpRight, ArrowDownRight } from "lucide-react";
-// We will integrate recharts later once verified
 
 const stats = [
   { label: "Today's Sales", value: "रु 15,400", change: "+12.5%", isPositive: true, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },

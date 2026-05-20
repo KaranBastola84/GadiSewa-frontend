@@ -11,7 +11,6 @@ export default function CreditPaymentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   
-  // Controlled form inputs matching exactly CreateCreditPaymentRequestDto.cs
   const [formData, setFormData] = useState({
     salesInvoiceId: "",
     amount: "",
@@ -67,7 +66,6 @@ export default function CreditPaymentsPage() {
         notes: ""
       });
       
-      // Refresh list
       fetchPayments();
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || "Failed to record payment.");
