@@ -31,6 +31,33 @@ export const staffCustomersService = {
     }
   },
 
+  getCustomerFullProfile: async (id) => {
+    try {
+      const response = await apiConfig.get(`${basePath}/${id}/full-profile`);
+      return unwrapApiResponse(response, "Failed to fetch full customer profile");
+    } catch (error) {
+      throw normalizeApiError(error, "Failed to fetch full customer profile");
+    }
+  },
+
+  getCustomerHistory: async (id) => {
+    try {
+      const response = await apiConfig.get(`${basePath}/${id}/history`);
+      return unwrapApiResponse(response, "Failed to fetch customer history");
+    } catch (error) {
+      throw normalizeApiError(error, "Failed to fetch customer history");
+    }
+  },
+
+  updateCustomer: async (id, customerData) => {
+    try {
+      const response = await apiConfig.put(`/Customers/${id}`, customerData);
+      return unwrapApiResponse(response, "Failed to update customer");
+    } catch (error) {
+      throw normalizeApiError(error, "Failed to update customer");
+    }
+  },
+
   getCustomerByVehicle: async (registrationNumber) => {
     try {
       const response = await apiConfig.get(

@@ -30,7 +30,7 @@ const Login = () => {
 
   const getRedirectPath = (role) => {
     if (role === USER_ROLES.ADMIN) return "/admin-dashboard";
-    if (role === USER_ROLES.STAFF) return "/staff-dashboard";
+    if (role === USER_ROLES.STAFF) return "/staff/dashboard";
     if (role === USER_ROLES.CUSTOMER) return "/customer/dashboard";
     return "/dashboard";
   };
@@ -83,6 +83,7 @@ const Login = () => {
         };
 
         const response = await authService.loginUser(credentials);
+        const authData = response?.result || response;
 
         if (response?.isSuccess && response?.result) {
           const authData = response.result;

@@ -49,7 +49,7 @@ export default function AppointmentsPage() {
   });
   const [errors, setErrors] = useState({});
 
-  const customerId = user?.userId;
+  const customerId = user?.customerId;
 
   const fetchData = async () => {
     if (!customerId) return;
@@ -59,8 +59,35 @@ export default function AppointmentsPage() {
         customerService.getVehicles(customerId),
         appointmentsService.getAppointments(),
       ]);
-      setVehicles(Array.isArray(vehRes) ? vehRes : vehRes?.result || vehRes?.vehicles || []);
-      setAppointments(Array.isArray(aptRes) ? aptRes : aptRes?.result || aptRes?.appointments || []);
+      const rawVeh = Array.isArray(vehRes) ? vehRes : vehRes?.result || vehRes?.vehicles || [];
+      setVehicles(
+        rawVeh.map((v) => ({
+          ...v,
+          id: v.vehicleId || v.id,
+        }))
+      );
+
+      const rawApt = Array.isArray(aptRes) ? aptRes : aptRes?.result || aptRes?.appointments || [];
+      const statusMap = {
+        1: "Pending",
+        2: "Confirmed",
+        3: "Cancelled",
+        4: "Completed",
+      };
+      setAppointments(
+        rawApt.map((a) => {
+          const schedDate = new Date(a.scheduledAt);
+          return {
+            id: a.id,
+            date: a.scheduledAt,
+            time: schedDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false }),
+            serviceType: a.problemDescription,
+            vehicleName: `${a.vehicleName || "Vehicle"} (${a.registrationNumber})`,
+            notes: a.notes,
+            status: statusMap[a.status] || a.status || "Pending",
+          };
+        })
+      );
     } catch (err) {
       console.error(err);
       setErrors({ fetch: err.message || "Failed to load data" });
@@ -99,18 +126,16 @@ export default function AppointmentsPage() {
     if (!validate()) return;
 
     try {
-      const vehicle = vehicles.find((v) => v.id === parseInt(form.vehicleId));
-      const vehicleName = vehicle
-        ? `${vehicle.make} ${vehicle.model} (${vehicle.plateNumber})`
-        : "";
+      const vehicle = vehicles.find((v) => v.id === form.vehicleId);
+      const problemDesc = form.notes.trim().length >= 10
+        ? form.notes.trim()
+        : `Requesting service: ${form.serviceType}. ` + (form.notes.trim() || "Routine inspection.");
 
       await appointmentsService.createAppointment({
-        vehicleId: parseInt(form.vehicleId),
-        vehicleName,
-        serviceType: form.serviceType,
-        date: form.date,
-        time: form.time,
-        notes: form.notes,
+        vehicleId: form.vehicleId,
+        scheduledAt: new Date(`${form.date}T${form.time}:00`).toISOString(),
+        problemDescription: problemDesc,
+        notes: form.notes.trim() || undefined,
       });
 
       setMsg("Appointment booked!");
