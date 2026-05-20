@@ -321,8 +321,8 @@ export default function AppointmentsPage() {
             key={f}
             onClick={() => setFilter(f)}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition ${filter === f
-                ? "bg-sky-600 text-white"
-                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              ? "bg-sky-600 text-white"
+              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
               }`}
           >
             {f}
@@ -369,10 +369,10 @@ export default function AppointmentsPage() {
               <div className="flex items-center gap-2">
                 <span
                   className={`px-2 py-0.5 rounded text-xs font-semibold ${apt.status === "Confirmed"
-                      ? "bg-green-50 text-green-700"
-                      : apt.status === "Cancelled"
-                        ? "bg-red-50 text-red-700"
-                        : "bg-amber-50 text-amber-700"
+                    ? "bg-green-50 text-green-700"
+                    : apt.status === "Cancelled"
+                      ? "bg-red-50 text-red-700"
+                      : "bg-amber-50 text-amber-700"
                     }`}
                 >
                   {apt.status}
