@@ -175,7 +175,7 @@ export default function Dashboard() {
     return { healthScore, pattern, alerts };
   };
 
-  const aiData = selectedVehicle ? getAIPredictions(selectedVehicle) : null;
+  const aiData = selectedVehicle ? getAIPredictions(selectedVehicle) : { healthScore: 100, pattern: "No vehicle selected", alerts: [] };
 
   if (loading) {
     return (
