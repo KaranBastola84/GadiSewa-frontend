@@ -8,9 +8,13 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Receipt,
+  LineChart,
+  PackageSearch,
   ShieldCheck,
   Users,
   X,
+  Bell,
 } from "lucide-react";
 
 const adminNavItems = [
@@ -18,6 +22,18 @@ const adminNavItems = [
   { to: "/admin/parts", label: "Parts", icon: Boxes },
   { to: "/admin/vendors", label: "Vendors", icon: Building2 },
   { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/purchase-invoices", label: "Purchase Invoices", icon: Receipt },
+  {
+    to: "/admin/reports/financial",
+    label: "Financial Reports",
+    icon: LineChart,
+  },
+  {
+    to: "/admin/reports/inventory",
+    label: "Inventory Reports",
+    icon: PackageSearch,
+  },
+  { to: "/admin/notifications", label: "Notifications Log", icon: Bell },
 ];
 
 export default function AdminLayout({ children, pageTitle, subtitle }) {

@@ -1,5 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import authService from "../services/authService";
+import apiConfig from "../config/apiConfig";
 
 const AuthContext = createContext();
 
@@ -25,6 +27,7 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback((authData) => {
     const {
       userId,
+      customerId,
       fullName,
       email,
       role,
@@ -33,6 +36,7 @@ export const AuthProvider = ({ children }) => {
     } = authData;
     const userData = {
       userId,
+      customerId,
       fullName,
       email,
       role,
@@ -45,14 +49,25 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("gadisewa_refresh_token", newRefresh);
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    setToken(null);
-    setRefreshToken(null);
-    localStorage.removeItem("gadisewa_user");
-    localStorage.removeItem("gadisewa_token");
-    localStorage.removeItem("gadisewa_refresh_token");
-  }, []);
+  const logout = useCallback(async () => {
+    const activeRefreshToken =
+      refreshToken || localStorage.getItem("gadisewa_refresh_token");
+
+    try {
+      if (activeRefreshToken) {
+        await authService.logout(activeRefreshToken);
+      }
+    } catch (error) {
+      console.error("Logout Error:", error);
+    } finally {
+      setUser(null);
+      setToken(null);
+      setRefreshToken(null);
+      localStorage.removeItem("gadisewa_user");
+      localStorage.removeItem("gadisewa_token");
+      localStorage.removeItem("gadisewa_refresh_token");
+    }
+  }, [refreshToken]);
 
   const isAuthenticated = !!token && !!user;
 
@@ -76,6 +91,25 @@ export const AuthProvider = ({ children }) => {
     setLoading,
     hasRole,
   };
+
+  useEffect(() => {
+    const resolveCustomerId = async () => {
+      if (token && user && user.role === USER_ROLES.CUSTOMER && !user.customerId) {
+        try {
+          const response = await apiConfig.get("/Customers/me");
+          const custId = response.data?.result?.customerId;
+          if (custId) {
+            const updatedUser = { ...user, customerId: custId };
+            setUser(updatedUser);
+            localStorage.setItem("gadisewa_user", JSON.stringify(updatedUser));
+          }
+        } catch (err) {
+          console.error("Failed to resolve customerId:", err);
+        }
+      }
+    };
+    resolveCustomerId();
+  }, [token, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -39,8 +39,10 @@ export default function PartsPage() {
     loadParts();
   }, []);
 
+  const isLowStock = (part) => Number(part?.stockQuantity || 0) < 10;
+
   const lowStockCount = useMemo(
-    () => parts.filter((part) => part.isLowStock).length,
+    () => parts.filter((part) => isLowStock(part)).length,
     [parts],
   );
 
@@ -270,53 +272,67 @@ export default function PartsPage() {
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {parts.map((part) => (
                       <tr key={part.partId} className="align-top">
-                        <Td>
-                          <div>
-                            <p className="font-semibold text-slate-950">
-                              {part.name}
-                            </p>
-                            <p className="text-xs text-slate-500 line-clamp-2">
-                              {part.description}
-                            </p>
-                          </div>
-                        </Td>
-                        <Td>{part.partNumber}</Td>
-                        <Td className="text-right">
-                          Rs. {Number(part.unitPrice || 0).toLocaleString()}
-                        </Td>
-                        <Td className="text-right">{part.stockQuantity}</Td>
-                        <Td>
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${part.isLowStock ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}
-                          >
-                            {part.isLowStock ? "Low stock" : "Healthy"}
-                          </span>
-                        </Td>
-                        <Td className="text-right">
-                          <div className="inline-flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openPartDetails(part.partId)}
-                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                              View
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleEdit(part)}
-                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(part.partId)}
-                              className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </Td>
+                        {(() => {
+                          const lowStock = isLowStock(part);
+                          return (
+                            <>
+                              <Td>
+                                <div>
+                                  <p className="font-semibold text-slate-950">
+                                    {part.name}
+                                  </p>
+                                  <p className="text-xs text-slate-500 line-clamp-2">
+                                    {part.description}
+                                  </p>
+                                </div>
+                              </Td>
+                              <Td>{part.partNumber}</Td>
+                              <Td className="text-right">
+                                Rs.{" "}
+                                {Number(part.unitPrice || 0).toLocaleString()}
+                              </Td>
+                              <Td className="text-right">
+                                {part.stockQuantity}
+                              </Td>
+                              <Td>
+                                <span
+                                  className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                    lowStock
+                                      ? "bg-red-50 text-red-700"
+                                      : "bg-emerald-50 text-emerald-700"
+                                  }`}
+                                >
+                                  {lowStock ? "Low Stock" : "Healthy"}
+                                </span>
+                              </Td>
+                              <Td className="text-right">
+                                <div className="inline-flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openPartDetails(part.partId)}
+                                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEdit(part)}
+                                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(part.partId)}
+                                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </Td>
+                            </>
+                          );
+                        })()}
                       </tr>
                     ))}
                     {parts.length === 0 && (
@@ -345,6 +361,15 @@ export default function PartsPage() {
             </div>
           ) : selectedPart ? (
             <div className="space-y-3 text-sm text-slate-700">
+              {(() => {
+                const lowStock = isLowStock(selectedPart);
+                return (
+                  <DetailRow
+                    label="Low stock"
+                    value={lowStock ? "Yes" : "No"}
+                  />
+                );
+              })()}
               <DetailRow label="Name" value={selectedPart.name} />
               <DetailRow label="Part number" value={selectedPart.partNumber} />
               <DetailRow label="Description" value={selectedPart.description} />
@@ -359,10 +384,6 @@ export default function PartsPage() {
               <DetailRow
                 label="Reorder level"
                 value={selectedPart.reorderLevel}
-              />
-              <DetailRow
-                label="Low stock"
-                value={selectedPart.isLowStock ? "Yes" : "No"}
               />
               <DetailRow label="Part ID" value={selectedPart.partId} />
             </div>

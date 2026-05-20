@@ -1,8 +1,18 @@
 export { default as authService } from "./authService";
 export { default as adminPartsService } from "./adminPartsService";
+export { default as adminStaffService } from "./adminStaffService";
 export { default as adminUsersService } from "./adminUsersService";
 export { default as adminVendorsService } from "./adminVendorsService";
 export { default as appointmentsService } from "./appointmentsService";
+export { default as adminPurchaseInvoicesService } from "./adminPurchaseInvoicesService";
+export { default as financialReportsService } from "./financialReportsService";
+export { default as inventoryReportsService } from "./inventoryReportsService";
 export { default as partRequestsService } from "./partRequestsService";
 export { default as reviewsService } from "./reviewsService";
+export { default as customerService } from "./customerService";
 export { default as staffCustomersService } from "./staffCustomersService";
+export { default as salesInvoicesService } from "./salesInvoicesService";
+export { default as reportsService } from "./reportsService";
+export { default as creditPaymentsService } from "./creditPaymentsService";
+export { default as adminNotificationsService } from "./adminNotificationsService";
+

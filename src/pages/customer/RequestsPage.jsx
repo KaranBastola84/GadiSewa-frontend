@@ -1,13 +1,61 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useCustomer } from "../../context/CustomerContext";
+import partRequestsService from "../../services/partRequestsService";
+import customerService from "../../services/customerService";
+import { useAuthContext } from "../../context/AuthContext";
 
 export default function RequestsPage() {
-  const { requests, submitRequest, vehicles } = useCustomer();
+  const { user } = useAuthContext();
+  const [requests, setRequests] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [msg, setMsg] = useState("");
   const [form, setForm] = useState({ partName: "", brand: "", vehicleModel: "", urgency: "Medium", notes: "" });
   const [errors, setErrors] = useState({});
+
+  const customerId = user?.customerId;
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [reqRes, vehRes] = await Promise.all([
+        partRequestsService.getRequests(),
+        customerId ? customerService.getVehicles(customerId) : Promise.resolve([])
+      ]);
+      const rawReq = Array.isArray(reqRes) ? reqRes : reqRes?.result || reqRes?.requests || [];
+      const statusMap = {
+        1: "Requested",
+        2: "Approved",
+        3: "Rejected",
+        4: "Ordered",
+        5: "Fulfilled",
+      };
+      setRequests(
+        rawReq.map((r) => ({
+          ...r,
+          statusText: statusMap[r.status] || r.status || "Requested",
+        }))
+      );
+
+      const rawVeh = Array.isArray(vehRes) ? vehRes : vehRes?.result || vehRes?.vehicles || [];
+      setVehicles(
+        rawVeh.map((v) => ({
+          ...v,
+          id: v.vehicleId || v.id,
+        }))
+      );
+    } catch (err) {
+      console.error(err);
+      setErrors({ fetch: err.message || "Failed to load data" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [customerId]);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,22 +74,24 @@ export default function RequestsPage() {
     e.preventDefault();
     if (!validate()) return;
     try {
-      await submitRequest(form);
+      await partRequestsService.createCustomerRequest(form);
       setForm({ partName: "", brand: "", vehicleModel: "", urgency: "Medium", notes: "" });
       setShowForm(false);
       setMsg("Request submitted!");
+      fetchData();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
-      setErrors({ submit: err.message });
+      setErrors({ submit: err.message || "Failed to submit request" });
     }
   }
 
   function statusBadge(status) {
     const map = {
-      Processing: "bg-blue-50 text-blue-700",
-      Pending: "bg-amber-50 text-amber-700",
-      Available: "bg-green-50 text-green-700",
-      Cancelled: "bg-red-50 text-red-700",
+      Approved: "bg-blue-50 text-blue-700",
+      Requested: "bg-amber-50 text-amber-700",
+      Fulfilled: "bg-green-50 text-green-700",
+      Rejected: "bg-red-50 text-red-700",
+      Ordered: "bg-purple-50 text-purple-700",
     };
     return map[status] || "bg-slate-50 text-slate-700";
   }
@@ -50,6 +100,9 @@ export default function RequestsPage() {
     <CustomerLayout pageTitle="Part Requests">
       {msg && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{msg}</div>
+      )}
+      {errors.fetch && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{errors.fetch}</div>
       )}
 
       <div className="flex items-center justify-between mb-5">
@@ -123,7 +176,11 @@ export default function RequestsPage() {
         </div>
       )}
 
-      {requests.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
+          <p className="text-slate-400">Loading requests...</p>
+        </div>
+      ) : requests.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
           <p className="text-slate-400">No part requests yet.</p>
         </div>
@@ -139,12 +196,12 @@ export default function RequestsPage() {
                     req.urgency === "High" ? "bg-orange-50 text-orange-600" :
                     "bg-slate-50 text-slate-500"
                   }`}>{req.urgency}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadge(req.status)}`}>{req.status}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadge(req.statusText)}`}>{req.statusText}</span>
                 </div>
               </div>
               <p className="text-sm text-slate-500">{req.vehicleModel} {req.brand && `• ${req.brand}`}</p>
               {req.notes && <p className="text-sm text-slate-400 mt-1">{req.notes}</p>}
-              <p className="text-xs text-slate-400 mt-2">Requested: {req.requestedDate}</p>
+              <p className="text-xs text-slate-400 mt-2">Requested: {req.requestedDate ? new Date(req.requestedDate).toLocaleDateString() : ""}</p>
             </div>
           ))}
         </div>

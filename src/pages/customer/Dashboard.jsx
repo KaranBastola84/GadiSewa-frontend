@@ -1,38 +1,203 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useCustomer } from "../../context/CustomerContext";
+import { useAuthContext } from "../../context/AuthContext";
+import customerService from "../../services/customerService";
+import appointmentsService from "../../services/appointmentsService";
+import authService from "../../services/authService";
+import { Star, MapPin, Phone, Clock, ArrowRight, Sparkles, Cpu, Activity, AlertTriangle } from "lucide-react";
 
 export default function Dashboard() {
-  const {
-    profile,
-    vehicles,
-    appointments,
-    history,
-    unreadCount,
-    totalSpent,
-    loading,
-  } = useCustomer();
+  const { user, token } = useAuthContext();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [selectedAIVehicleId, setSelectedAIVehicleId] = useState("");
+
+  const customerId = user?.customerId;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!customerId || !token) return;
+      try {
+        setLoading(true);
+        const [profRes, vehRes, aptRes, histRes, invRes] = await Promise.allSettled([
+          authService.getProfile(token),
+          customerService.getVehicles(customerId),
+          appointmentsService.getAppointments(),
+          customerService.getHistory(),
+          customerService.getSalesInvoices()
+        ]);
+
+        if (profRes.status === "fulfilled") {
+          setProfile(profRes.value?.result || profRes.value?.profile || null);
+        }
+
+        if (vehRes.status === "fulfilled") {
+          setVehicles(Array.isArray(vehRes.value) ? vehRes.value : vehRes.value?.result || []);
+        }
+
+        if (aptRes.status === "fulfilled") {
+          setAppointments(Array.isArray(aptRes.value) ? aptRes.value : aptRes.value?.result || []);
+        }
+
+        let combinedHistory = [];
+        if (histRes.status === "fulfilled") {
+          const summary = histRes.value?.result || histRes.value || {};
+          const appointments = summary.recentAppointments || [];
+          const invoices = summary.recentInvoices || [];
+          
+          const serviceData = appointments.map(item => {
+            const linkedInvoice = invoices.find(inv => inv.appointmentId === item.appointmentId);
+            return {
+              id: linkedInvoice?.invoiceId || item.appointmentId,
+              invoiceNo: linkedInvoice?.invoiceNumber || item.appointmentNumber,
+              date: item.completedAt || item.scheduledAt,
+              description: item.problemDescription || "Vehicle Service",
+              vehicle: item.vehicleRegistration,
+              amount: linkedInvoice?.totalAmount || 0,
+              discount: linkedInvoice?.discountAmount || 0,
+              status: linkedInvoice?.status || item.status,
+            };
+          });
+          combinedHistory = [...combinedHistory, ...serviceData.map(item => ({ ...item, type: "Service" }))];
+        }
+        if (invRes.status === "fulfilled") {
+          const invoices = Array.isArray(invRes.value) ? invRes.value : invRes.value?.result || [];
+          const invoiceData = invoices.map(item => ({
+            id: item.invoiceId,
+            invoiceNo: item.invoiceNumber,
+            date: item.invoiceDate,
+            description: item.items?.[0]?.description || "Parts Purchase",
+            vehicle: "-",
+            amount: item.totalAmount,
+            discount: item.discountAmount,
+            status: item.status,
+          }));
+          combinedHistory = [...combinedHistory, ...invoiceData.map(item => ({ ...item, type: "Purchase" }))];
+        }
+        
+        combinedHistory.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        setHistory(combinedHistory);
+
+        setUnreadCount(0);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [customerId, token]);
+
+  useEffect(() => {
+    if (vehicles.length > 0 && !selectedAIVehicleId) {
+      setSelectedAIVehicleId(vehicles[0].vehicleId || vehicles[0].id);
+    }
+  }, [vehicles, selectedAIVehicleId]);
+
+  const selectedVehicle = vehicles.find(v => (v.vehicleId || v.id) === selectedAIVehicleId);
+
+  const getAIPredictions = (vehicle) => {
+    if (!vehicle) return { healthScore: 100, pattern: "Unknown", alerts: [] };
+    
+    const mileage = Number(vehicle.mileage) || 0;
+    const year = Number(vehicle.year) || new Date().getFullYear();
+    const age = new Date().getFullYear() - year;
+    
+    let healthScore = 98;
+    const alerts = [];
+    let pattern = "Normal commute patterns detected (Est. 800 km/month)";
+
+    if (mileage > 45000) {
+      pattern = "Heavy highway usage & daily commuting detected (~1,500 km/month)";
+    } else if (mileage > 15000) {
+      pattern = "Moderate city driving & weekly usage (~900 km/month)";
+    } else {
+      pattern = "Light short-trip driving patterns (~400 km/month)";
+    }
+
+    if (mileage > 50000) {
+      healthScore -= 18;
+      alerts.push({
+        partName: "Brake Pads & Rotors",
+        probability: "84% (High Risk)",
+        recommendation: "Inspect pads at next service. Failure predicted in ~1,100 km.",
+        severity: "high"
+      });
+      alerts.push({
+        partName: "Suspension Struts",
+        probability: "62% (Medium Risk)",
+        recommendation: "Slight wear pattern detected. Consider replacement within 5,000 km.",
+        severity: "medium"
+      });
+    } else if (mileage > 25000) {
+      healthScore -= 8;
+      alerts.push({
+        partName: "Brake Pads",
+        probability: "55% (Medium Risk)",
+        recommendation: "Thickness estimated at 4mm. Schedule inspection in 3,000 km.",
+        severity: "medium"
+      });
+    }
+
+    if (age > 6) {
+      healthScore -= 12;
+      alerts.push({
+        partName: "12V Battery",
+        probability: "75% (High Risk)",
+        recommendation: "Charge retention capacity is degrading. Replace battery to avoid winter failure.",
+        severity: "high"
+      });
+    } else if (age > 3) {
+      healthScore -= 5;
+      alerts.push({
+        partName: "Cabin Air Filter",
+        probability: "48% (Medium Risk)",
+        recommendation: "Replace filter due to seasonal dust and usage timeframe.",
+        severity: "medium"
+      });
+    }
+
+    alerts.push({
+      partName: "Engine Oil & Filter",
+      probability: "15% (Low Risk)",
+      recommendation: "Scheduled replacement due in 2,400 km or 3 months.",
+      severity: "low"
+    });
+
+    healthScore = Math.max(50, healthScore);
+
+    return { healthScore, pattern, alerts };
+  };
+
+  const aiData = selectedVehicle ? getAIPredictions(selectedVehicle) : null;
 
   if (loading) {
     return (
       <CustomerLayout pageTitle="Dashboard">
         <div className="flex items-center justify-center py-20">
-          <p className="text-slate-400">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
         </div>
       </CustomerLayout>
     );
   }
 
-  // filter upcoming ones
   const upcomingAppts = appointments.filter(
     (a) => a.status !== "Cancelled" && new Date(a.date) >= new Date(),
   );
 
-  // pending credit payments
-  const creditItems = history.filter((h) => h.status === "Credit");
-  const creditTotal = creditItems.reduce((s, h) => s + h.amount, 0);
+  const totalSpent = history
+    .filter(h => h.status === "Paid")
+    .reduce((s, h) => s + (h.amount || 0), 0);
 
-  // check loyalty eligibility (spent > 5000 in single purchase)
+  const creditItems = history.filter((h) => h.status === "Credit" || h.status === "Unpaid");
+  const creditTotal = creditItems.reduce((s, h) => s + (h.amount || 0), 0);
+
   const hasLoyalty = totalSpent >= 5000;
 
   return (
@@ -40,11 +205,11 @@ export default function Dashboard() {
       <div className="relative overflow-hidden rounded-[28px] p-6 sm:p-8 mb-6 text-white shadow-2xl shadow-sky-500/20 bg-linear-to-br from-sky-600 via-sky-700 to-indigo-800 border border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.22),transparent_28%)]" />
         <div className="relative">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold tracking-wide uppercase text-sky-50">
-            Customer overview
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-semibold tracking-wide uppercase text-sky-50 ring-1 ring-white/20">
+            <Sparkles size={14} className="text-sky-200" /> Customer overview
           </div>
           <h1 className="mt-4 text-2xl sm:text-3xl font-bold">
-            Welcome, {profile?.fullName || "Customer"}!
+            Welcome, {profile?.fullName || user?.fullName || "Customer"}!
           </h1>
           <p className="mt-2 max-w-2xl text-sky-100">
             Manage your vehicles, book appointments, and track purchases from a
@@ -52,7 +217,7 @@ export default function Dashboard() {
           </p>
           {hasLoyalty && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm backdrop-blur-sm">
-              <span>⭐</span> Loyalty Member - 10% off on purchases over Rs.
+              <Star size={16} className="text-yellow-400 fill-yellow-400" /> Loyalty Member - 10% off on purchases over Rs.
               5,000
             </div>
           )}
@@ -110,6 +275,105 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* AI Predictive Diagnostics */}
+          <div className="bg-slate-900 rounded-[28px] p-6 text-white border border-slate-800 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="relative flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                  <Cpu size={20} className="animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg tracking-tight">AI Predictive Maintenance</h3>
+                  <p className="text-xs text-slate-400">Integrated vehicle diagnostics & failure predictions</p>
+                </div>
+              </div>
+              
+              {vehicles.length > 1 && (
+                <select
+                  value={selectedAIVehicleId}
+                  onChange={(e) => setSelectedAIVehicleId(e.target.value)}
+                  className="bg-slate-850 border border-slate-700 text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-white font-semibold cursor-pointer"
+                >
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.make} {v.model}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {vehicles.length === 0 ? (
+              <div className="py-6 text-center text-slate-400 text-sm bg-slate-800/40 rounded-2xl border border-slate-800">
+                <Activity size={24} className="mx-auto text-slate-500 mb-2" />
+                No vehicles registered. Add a vehicle to enable AI diagnostics.
+              </div>
+            ) : (
+              <div className="space-y-5 relative">
+                {/* Health & Usage Row */}
+                <div className="grid sm:grid-cols-3 gap-4 bg-slate-800/30 border border-slate-800 rounded-2xl p-4">
+                  <div className="text-center sm:border-r border-slate-800 pr-2">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Health Status</p>
+                    <div className="mt-2 flex items-center justify-center gap-1">
+                      <span className={`text-2xl font-black ${aiData.healthScore > 85 ? "text-emerald-400" : aiData.healthScore > 70 ? "text-amber-400" : "text-rose-500"}`}>
+                        {aiData.healthScore}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Usage Pattern Analysis</p>
+                    <p className="text-xs text-slate-300 mt-1.5 font-medium leading-relaxed">
+                      {aiData.pattern}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Predictions List */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Predicted Part Failures & Risk Levels</h4>
+                  <div className="space-y-2.5">
+                    {aiData.alerts.map((alert, idx) => (
+                      <div key={idx} className="bg-slate-800/60 hover:bg-slate-700/65 transition-all border border-slate-850 rounded-xl p-3.5 flex items-start gap-3">
+                        <div className="mt-0.5">
+                          {alert.severity === "high" ? (
+                            <AlertTriangle className="text-rose-500" size={16} />
+                          ) : alert.severity === "medium" ? (
+                            <AlertTriangle className="text-amber-500" size={16} />
+                          ) : (
+                            <Activity className="text-sky-400" size={16} />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <p className="text-sm font-semibold text-white truncate">{alert.partName}</p>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              alert.severity === "high" 
+                                ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" 
+                                : alert.severity === "medium" 
+                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
+                                : "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                            }`}>
+                              {alert.probability}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-450 mt-1 leading-relaxed">{alert.recommendation}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Disclaimer */}
+                <p className="text-[10px] text-slate-500 text-center leading-relaxed">
+                  * AI analysis is simulated based on vehicle mileage trend, age factor, and service catalog guidelines.
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="bg-white rounded-xl p-5 border border-slate-200">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-slate-800">
@@ -119,7 +383,7 @@ export default function Dashboard() {
                 to="/customer/appointments"
                 className="text-sm text-sky-600 hover:text-sky-700"
               >
-                View all →
+                View all <ArrowRight size={14} className="inline ml-1" />
               </Link>
             </div>
             {upcomingAppts.length === 0 ? (
@@ -133,7 +397,7 @@ export default function Dashboard() {
               <div className="space-y-2">
                 {upcomingAppts.slice(0, 3).map((apt) => (
                   <div
-                    key={apt.id}
+                    key={apt.id || Math.random()}
                     className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
                   >
                     <div className="text-center shrink-0">
@@ -155,11 +419,10 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                        apt.status === "Confirmed"
-                          ? "bg-green-50 text-green-700"
-                          : "bg-amber-50 text-amber-700"
-                      }`}
+                      className={`px-2 py-0.5 rounded text-xs font-semibold ${apt.status === "Confirmed"
+                        ? "bg-green-50 text-green-700"
+                        : "bg-amber-50 text-amber-700"
+                        }`}
                     >
                       {apt.status}
                     </span>
@@ -181,7 +444,7 @@ export default function Dashboard() {
                 to="/customer/history"
                 className="text-xs text-red-700 font-semibold mt-2 inline-block"
               >
-                View details →
+                View details <ArrowRight size={14} className="inline ml-1" />
               </Link>
             </div>
           )}
@@ -193,7 +456,7 @@ export default function Dashboard() {
                 to="/customer/history"
                 className="text-sm text-sky-600 hover:text-sky-700"
               >
-                View all →
+                View all <ArrowRight size={14} className="inline ml-1" />
               </Link>
             </div>
             {history.length === 0 ? (
@@ -204,18 +467,24 @@ export default function Dashboard() {
               <div className="space-y-2">
                 {history.slice(0, 4).map((item) => (
                   <div
-                    key={item.id}
+                    key={item.id || Math.random()}
                     className="flex justify-between py-2 border-b border-slate-50 last:border-0"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-700 truncate">
-                        {item.description}
+                        {item.type === "Purchase" && item.id ? (
+                          <Link to={`/customer/invoice/${item.id}`} className="hover:text-sky-600 hover:underline">
+                            {item.description || "-"}
+                          </Link>
+                        ) : (
+                          item.description || "-"
+                        )}
                       </p>
-                      <p className="text-xs text-slate-400">{item.date}</p>
+                      <p className="text-xs text-slate-400">{item.date ? new Date(item.date).toLocaleDateString() : "-"}</p>
                     </div>
                     <div className="text-right ml-3">
                       <p className="text-sm font-bold text-slate-800">
-                        Rs. {item.amount?.toLocaleString()}
+                        Rs. {item.amount?.toLocaleString() || 0}
                       </p>
                       <span
                         className={`text-xs ${item.status === "Paid" ? "text-green-600" : "text-red-600"}`}
@@ -236,9 +505,9 @@ export default function Dashboard() {
               servicing, fair pricing.
             </p>
             <div className="mt-3 space-y-1.5 text-xs text-slate-400">
-              <p>📍 Kathmandu, Nepal</p>
-              <p>📞 +977-1-4567890</p>
-              <p>🕐 Sun - Fri: 8 AM - 6 PM</p>
+              <p className="flex items-center gap-2"><MapPin size={14} /> Kathmandu, Nepal</p>
+              <p className="flex items-center gap-2"><Phone size={14} /> +977-1-4567890</p>
+              <p className="flex items-center gap-2"><Clock size={14} /> Sun - Fri: 8 AM - 6 PM</p>
             </div>
           </div>
         </div>
@@ -274,9 +543,7 @@ function ActionLink({ to, label, desc }) {
         <p className="text-sm font-semibold text-slate-900">{label}</p>
         <p className="text-xs text-slate-500">{desc}</p>
       </div>
-      <span className="text-slate-300 group-hover:text-sky-500 transition">
-        →
-      </span>
+      <ArrowRight size={18} className="text-slate-300 group-hover:text-sky-500 group-hover:translate-x-1 transition-all duration-200" />
     </Link>
   );
 }

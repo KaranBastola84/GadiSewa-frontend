@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { AUTH_BG_IMAGE } from "../../constants";
 import authService from "../../services/authService";
@@ -14,10 +14,23 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [toast, setToast] = useState("");
+  const toastTimerRef = useRef(null);
+
+  const showToast = (message) => {
+    setToast(message);
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = setTimeout(() => {
+      setToast("");
+      toastTimerRef.current = null;
+    }, 2500);
+  };
 
   const getRedirectPath = (role) => {
     if (role === USER_ROLES.ADMIN) return "/admin-dashboard";
-    if (role === USER_ROLES.STAFF) return "/staff-dashboard";
+    if (role === USER_ROLES.STAFF) return "/staff/dashboard";
     if (role === USER_ROLES.CUSTOMER) return "/customer/dashboard";
     return "/dashboard";
   };
@@ -40,6 +53,9 @@ const Login = () => {
       newErrors.agreeTerms = "You must agree to the terms";
     }
     setErrors(newErrors);
+    if (newErrors.agreeTerms) {
+      showToast("Please accept the terms to continue.");
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -67,6 +83,7 @@ const Login = () => {
         };
 
         const response = await authService.loginUser(credentials);
+        const authData = response?.result || response;
 
         if (response?.isSuccess && response?.result) {
           const authData = response.result;
@@ -92,6 +109,11 @@ const Login = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-6 lg:p-12">
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg">
+          {toast}
+        </div>
+      )}
       {/* Global Background (Blurred image behind the card) */}
       <div
         className="absolute inset-0 z-0 overflow-hidden"
@@ -152,12 +174,12 @@ const Login = () => {
                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                   Password
                 </label>
-                <button
-                  type="button"
+                <Link
+                  to="/forgot-password"
                   className="text-[10px] font-bold text-slate-400 hover:text-slate-900 transition-colors uppercase"
                 >
                   Forgot password?
-                </button>
+                </Link>
               </div>
               <div className="relative">
                 <input
@@ -203,7 +225,9 @@ const Login = () => {
                 name="agreeTerms"
                 checked={formData.agreeTerms}
                 onChange={handleChange}
-                className="w-4 h-4 rounded border-slate-200 text-slate-900 focus:ring-0 cursor-pointer"
+                className={`w-4 h-4 rounded border-slate-200 text-slate-900 focus:ring-0 cursor-pointer ${
+                  errors.agreeTerms ? "ring-1 ring-red-300" : ""
+                }`}
               />
               <label
                 htmlFor="agreeTerms"
@@ -215,6 +239,11 @@ const Login = () => {
                 </span>
               </label>
             </div>
+            {errors.agreeTerms && (
+              <p className="text-[10px] text-red-500 ml-1">
+                {errors.agreeTerms}
+              </p>
+            )}
 
             <div className="pt-4">
               <button
@@ -236,6 +265,13 @@ const Login = () => {
               Sign Up Here
             </Link>
           </p>
+
+          <Link
+            to="/verify-email"
+            className="mt-4 inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-200 text-[11px] font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 hover:border-slate-300 transition"
+          >
+            Verify Email
+          </Link>
         </div>
 
         {/* Right Side - Image & Overlay */}

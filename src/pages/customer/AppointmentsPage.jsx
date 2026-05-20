@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomerLayout from "../../components/CustomerLayout";
-import { useCustomer } from "../../context/CustomerContext";
+import appointmentsService from "../../services/appointmentsService";
+import customerService from "../../services/customerService";
+import { useAuthContext } from "../../context/AuthContext";
 
 const serviceTypes = [
   "Oil Change",
@@ -31,8 +33,10 @@ const timeSlots = [
 ];
 
 export default function AppointmentsPage() {
-  const { vehicles, appointments, bookAppointment, cancelAppointment } =
-    useCustomer();
+  const { user } = useAuthContext();
+  const [vehicles, setVehicles] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState("all");
   const [msg, setMsg] = useState("");
@@ -44,6 +48,57 @@ export default function AppointmentsPage() {
     notes: "",
   });
   const [errors, setErrors] = useState({});
+
+  const customerId = user?.customerId;
+
+  const fetchData = async () => {
+    if (!customerId) return;
+    try {
+      setLoading(true);
+      const [vehRes, aptRes] = await Promise.all([
+        customerService.getVehicles(customerId),
+        appointmentsService.getAppointments(),
+      ]);
+      const rawVeh = Array.isArray(vehRes) ? vehRes : vehRes?.result || vehRes?.vehicles || [];
+      setVehicles(
+        rawVeh.map((v) => ({
+          ...v,
+          id: v.vehicleId || v.id,
+        }))
+      );
+
+      const rawApt = Array.isArray(aptRes) ? aptRes : aptRes?.result || aptRes?.appointments || [];
+      const statusMap = {
+        1: "Pending",
+        2: "Confirmed",
+        3: "Cancelled",
+        4: "Completed",
+      };
+      setAppointments(
+        rawApt.map((a) => {
+          const schedDate = new Date(a.scheduledAt);
+          return {
+            id: a.id,
+            date: a.scheduledAt,
+            time: schedDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false }),
+            serviceType: a.problemDescription,
+            vehicleName: `${a.vehicleName || "Vehicle"} (${a.registrationNumber})`,
+            notes: a.notes,
+            status: statusMap[a.status] || a.status || "Pending",
+          };
+        })
+      );
+    } catch (err) {
+      console.error(err);
+      setErrors({ fetch: err.message || "Failed to load data" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [customerId]);
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -71,18 +126,16 @@ export default function AppointmentsPage() {
     if (!validate()) return;
 
     try {
-      const vehicle = vehicles.find((v) => v.id === parseInt(form.vehicleId));
-      const vehicleName = vehicle
-        ? `${vehicle.make} ${vehicle.model} (${vehicle.plateNumber})`
-        : "";
+      const vehicle = vehicles.find((v) => v.id === form.vehicleId);
+      const problemDesc = form.notes.trim().length >= 10
+        ? form.notes.trim()
+        : `Requesting service: ${form.serviceType}. ` + (form.notes.trim() || "Routine inspection.");
 
-      await bookAppointment({
-        vehicleId: parseInt(form.vehicleId),
-        vehicleName,
-        serviceType: form.serviceType,
-        date: form.date,
-        time: form.time,
-        notes: form.notes,
+      await appointmentsService.createAppointment({
+        vehicleId: form.vehicleId,
+        scheduledAt: new Date(`${form.date}T${form.time}:00`).toISOString(),
+        problemDescription: problemDesc,
+        notes: form.notes.trim() || undefined,
       });
 
       setMsg("Appointment booked!");
@@ -94,23 +147,25 @@ export default function AppointmentsPage() {
         notes: "",
       });
       setShowForm(false);
+      fetchData();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
-      setErrors({ submit: err.message });
+      setErrors({ submit: err.message || "Failed to book appointment" });
     }
   }
 
   async function handleCancel(id) {
     try {
-      await cancelAppointment(id);
+      await appointmentsService.deleteAppointment(id);
       setMsg("Appointment cancelled.");
+      fetchData();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) {
       console.error(err);
+      setErrors({ fetch: err.message || "Failed to cancel appointment" });
     }
   }
 
-  // apply filter
   const today = new Date(new Date().toDateString());
   const filtered = appointments
     .filter((a) => {
@@ -127,6 +182,11 @@ export default function AppointmentsPage() {
       {msg && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
           {msg}
+        </div>
+      )}
+      {errors.fetch && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {errors.fetch}
         </div>
       )}
 
@@ -285,18 +345,21 @@ export default function AppointmentsPage() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition ${
-              filter === f
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition ${filter === f
                 ? "bg-sky-600 text-white"
                 : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-            }`}
+              }`}
           >
             {f}
           </button>
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
+          <p className="text-slate-400">Loading appointments...</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-10 text-center">
           <p className="text-slate-400">No appointments found.</p>
         </div>
@@ -330,13 +393,12 @@ export default function AppointmentsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                    apt.status === "Confirmed"
+                  className={`px-2 py-0.5 rounded text-xs font-semibold ${apt.status === "Confirmed"
                       ? "bg-green-50 text-green-700"
                       : apt.status === "Cancelled"
                         ? "bg-red-50 text-red-700"
                         : "bg-amber-50 text-amber-700"
-                  }`}
+                    }`}
                 >
                   {apt.status}
                 </span>

@@ -20,6 +20,15 @@ export const appointmentsService = {
     }
   },
 
+  deleteAppointment: async (id) => {
+    try {
+      const response = await apiConfig.delete(`/Appointments/${id}`);
+      return unwrapApiResponse(response, "Failed to cancel appointment");
+    } catch (error) {
+      throw normalizeApiError(error, "Failed to cancel appointment");
+    }
+  },
+
   getStaffAppointments: async () => {
     try {
       const response = await apiConfig.get("/Appointments/staff");

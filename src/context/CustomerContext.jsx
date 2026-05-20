@@ -1,5 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 const CustomerContext = createContext(null);
 
@@ -18,85 +24,42 @@ function saveData(key, data) {
 
 export function CustomerProvider({ children }) {
   const [profile, setProfile] = useState(() => loadData("gs_profile", null));
-  const [vehicles, setVehicles] = useState(() => loadData("gs_vehicles"));
-  const [appointments, setAppointments] = useState(() =>
-    loadData("gs_appointments"),
-  );
-  const [history] = useState(() => loadData("gs_history"));
-  const [requests, setRequests] = useState(() => loadData("gs_requests"));
-  const [reviews, setReviews] = useState(() => loadData("gs_reviews"));
   const [notifications, setNotifications] = useState(() =>
-    loadData("gs_notifications"),
+    loadData("gs_notifications", [
+      {
+        id: "ai-alert-1",
+        title: "AI Failure Prediction Alert",
+        message: "AI analysis predicts a potential wear warning for 'Brake Pads & Rotors' within the next 1,500 km. Preventative maintenance is recommended.",
+        type: "service",
+        read: false,
+        date: new Date(Date.now() - 3600000).toISOString()
+      },
+      {
+        id: "welcome-alert",
+        title: "Welcome to GadiSewa",
+        message: "Your vehicle care journey starts here. Add your vehicles to receive live automated AI maintenance alerts.",
+        type: "general",
+        read: false,
+        date: new Date(Date.now() - 86400000).toISOString()
+      }
+    ]),
   );
+  const [totalSpent, setTotalSpent] = useState(0);
 
   useEffect(() => {
     if (profile) saveData("gs_profile", profile);
   }, [profile]);
   useEffect(() => {
-    saveData("gs_vehicles", vehicles);
-  }, [vehicles]);
-  useEffect(() => {
-    saveData("gs_appointments", appointments);
-  }, [appointments]);
-  useEffect(() => {
-    saveData("gs_requests", requests);
-  }, [requests]);
-  useEffect(() => {
-    saveData("gs_reviews", reviews);
-  }, [reviews]);
-  useEffect(() => {
     saveData("gs_notifications", notifications);
   }, [notifications]);
 
-  function updateProfile(data) {
+  const updateProfile = useCallback((data) => {
     setProfile(data);
-  }
+  }, []);
 
-  function addVehicle(data) {
-    const newVehicle = { ...data, id: Date.now() };
-    setVehicles((prev) => [...prev, newVehicle]);
-  }
-
-  function updateVehicle(id, data) {
-    setVehicles((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, ...data } : v)),
-    );
-  }
-
-  function deleteVehicle(id) {
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
-  }
-
-  function bookAppointment(data) {
-    const newAppt = { ...data, id: Date.now(), status: "Pending" };
-    setAppointments((prev) => [...prev, newAppt]);
-  }
-
-  function cancelAppointment(id) {
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "Cancelled" } : a)),
-    );
-  }
-
-  function submitRequest(data) {
-    const newReq = {
-      ...data,
-      id: Date.now(),
-      status: "Pending",
-      requestedDate: new Date().toISOString().split("T")[0],
-    };
-    setRequests((prev) => [...prev, newReq]);
-  }
-
-  function submitReview(data) {
-    const newReview = {
-      ...data,
-      id: Date.now(),
-      date: new Date().toISOString().split("T")[0],
-      response: "",
-    };
-    setReviews((prev) => [...prev, newReview]);
-  }
+  const updateTotalSpent = useCallback((amount) => {
+    setTotalSpent(amount);
+  }, []);
 
   function markRead(id) {
     setNotifications((prev) =>
@@ -109,28 +72,16 @@ export function CustomerProvider({ children }) {
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-  const totalSpent = history.reduce((sum, h) => sum + (h.amount || 0), 0);
 
   const value = {
     profile,
     updateProfile,
-    vehicles,
-    addVehicle,
-    updateVehicle,
-    deleteVehicle,
-    appointments,
-    bookAppointment,
-    cancelAppointment,
-    history,
-    requests,
-    submitRequest,
-    reviews,
-    submitReview,
+    totalSpent,
+    updateTotalSpent,
     notifications,
     markRead,
     markAllRead,
     unreadCount,
-    totalSpent,
     loading: false,
   };
 
