@@ -1,9 +1,23 @@
 import React, { useState, useEffect } from "react";
 import StaffLayout from "../../components/StaffLayout";
 import apiConfig from "../../config/apiConfig";
-import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, Plus, Calendar, Hash } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+
+const requestSchema = yup.object().shape({
+  partId: yup.string().required("Part ID is required"),
+  quantityRequested: yup.number()
+    .transform((value) => (isNaN(value) ? undefined : value))
+    .required("Quantity is required")
+    .positive("Quantity must be greater than 0")
+    .integer("Quantity must be a whole number"),
+  neededBy: yup.string().required("Date needed is required"),
+  notes: yup.string()
+});
 
 const STATUS_OPTIONS = [
   { value: 1, label: "Requested", color: "text-blue-600 bg-blue-50" },
@@ -18,6 +32,29 @@ export default function PartRequestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const { register, handleSubmit, formState: { errors, isValid, isSubmitting }, reset } = useForm({
+    resolver: yupResolver(requestSchema),
+    mode: "onChange"
+  });
+
+  const onSubmitForm = async (data) => {
+    try {
+      await apiConfig.post("/part-requests", {
+        partId: data.partId,
+        quantityRequested: parseInt(data.quantityRequested),
+        neededBy: new Date(data.neededBy).toISOString(),
+        notes: data.notes || ""
+      });
+      toast.success("Part request submitted successfully!");
+      reset();
+      setShowForm(false);
+      fetchRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Failed to submit request.");
+    }
+  };
 
   const fetchRequests = async () => {
     try {
@@ -69,6 +106,83 @@ export default function PartRequestsPage() {
     <StaffLayout pageTitle="Part Requests" subtitle="Monitor and manage unavailability part requests from customers.">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       
+      <div className="mb-6 flex justify-end">
+        <button 
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold shadow-xs hover:bg-emerald-700 transition"
+        >
+          {showForm ? "Cancel Request Form" : <><Plus className="w-4 h-4" /> New Part Request</>}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xs p-6 mb-8 mt-2 animate-in slide-in-from-top-4">
+          <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-2">Create New Part Request</h3>
+          
+          <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Part ID *</label>
+                <div className="relative">
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input 
+                    {...register("partId")}
+                    placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border ${errors.partId ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:ring-blue-100'} outline-hidden focus:ring-4 transition-all text-sm bg-slate-50`}
+                  />
+                </div>
+                {errors.partId && <p className="text-rose-500 text-xs mt-1 font-bold">{errors.partId.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Quantity *</label>
+                <input 
+                  type="number"
+                  {...register("quantityRequested")}
+                  placeholder="Enter quantity > 0"
+                  className={`w-full px-4 py-2.5 rounded-xl border ${errors.quantityRequested ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:ring-blue-100'} outline-hidden focus:ring-4 transition-all text-sm bg-slate-50`}
+                />
+                {errors.quantityRequested && <p className="text-rose-500 text-xs mt-1 font-bold">{errors.quantityRequested.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Needed By *</label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="date"
+                    {...register("neededBy")}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border ${errors.neededBy ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:ring-blue-100'} outline-hidden focus:ring-4 transition-all text-sm bg-slate-50`}
+                  />
+                </div>
+                {errors.neededBy && <p className="text-rose-500 text-xs mt-1 font-bold">{errors.neededBy.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Notes</label>
+                <input 
+                  {...register("notes")}
+                  placeholder="Any additional info..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-blue-100 outline-hidden focus:ring-4 transition-all text-sm bg-slate-50"
+                />
+                {errors.notes && <p className="text-rose-500 text-xs mt-1 font-bold">{errors.notes.message}</p>}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-slate-100 mt-6">
+              <button
+                type="submit"
+                disabled={!isValid || isSubmitting}
+                className={`px-6 py-2.5 rounded-xl font-bold transition flex items-center gap-2 ${!isValid || isSubmitting ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/20'}`}
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                Submit Part Request
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xs overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <h2 className="text-lg font-bold text-slate-900">All Part Requests</h2>
