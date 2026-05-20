@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { financialReportsService } from "../../services/financialReportsService";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 const StatCard = ({ label, value, hint }) => (
   <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -90,6 +91,69 @@ export default function AdminDashboard() {
               hint="Total discounts given"
             />
           </div>
+
+          {/* Charts Section */}
+          {reportData.lines && reportData.lines.length > 0 && (
+            <div className="grid gap-6 lg:grid-cols-2 mt-8">
+              {/* Revenue & Profit Area Chart */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h3 className="text-base font-bold text-slate-900 mb-6">Revenue vs Profit (Last 30 Days)</h3>
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={reportData.lines} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0284c7" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#0284c7" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="period" tick={{fontSize: 12, fill: '#64748b'}} tickFormatter={(str) => {
+                          if(!str) return '';
+                          const d = new Date(str);
+                          return `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
+                      }} />
+                      <YAxis tick={{fontSize: 12, fill: '#64748b'}} tickFormatter={(value) => `Rs.${value/1000}k`} width={80} />
+                      <RechartsTooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value) => [`Rs. ${Number(value).toLocaleString()}`, undefined]}
+                      />
+                      <Legend />
+                      <Area type="monotone" dataKey="revenue" name="Total Revenue" stroke="#0284c7" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                      <Area type="monotone" dataKey="profit" name="Net Profit" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Transactions Bar Chart */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h3 className="text-base font-bold text-slate-900 mb-6">Daily Transactions</h3>
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={reportData.lines} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="period" tick={{fontSize: 12, fill: '#64748b'}} tickFormatter={(str) => {
+                          if(!str) return '';
+                          const d = new Date(str);
+                          return `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
+                      }} />
+                      <YAxis tick={{fontSize: 12, fill: '#64748b'}} allowDecimals={false} width={40} />
+                      <RechartsTooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend />
+                      <Bar dataKey="transactionCount" name="Transactions" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </AdminLayout>
